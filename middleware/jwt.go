@@ -9,13 +9,13 @@ import (
 
 // Middleware 中间件
 type Middleware struct {
-	*jwtauth.JwtAuth
+	Jwt  *jwtauth.JwtAuth
 }
 
 // LoginAuth 登录中间件
 func (middle *Middleware) LoginAuth() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		if err := middle.ParseToken(ctx); err != nil {
+		if err := middle.Jwt.ParseToken(ctx); err != nil {
 			ctx.AbortWithStatusJSON(http.StatusOK, &resp.Response{
 				Code: http.StatusUnauthorized,
 				Msg:  "未登录,请先登录",

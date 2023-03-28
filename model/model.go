@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 const (
 	ArticleTableName          = "t_article"           // 文章表
 	BannerTableName           = "t_banner"            // banner表
@@ -13,9 +15,9 @@ const (
 
 // Model 基本字段
 type Model struct {
-	ID         int64  `json:"id" gorm:"primaryKey"`
-	CreateTime string `json:"createTime" gorm:"<-:false"`
-	UpdateTime string `json:"updateTime" gorm:"<-:false"`
+	ID         int64     `json:"id" gorm:"primaryKey"`
+	CreateTime time.Time `json:"createTime" gorm:"<-:false"`
+	UpdateTime time.Time `json:"updateTime" gorm:"<-:false"`
 }
 
 // Page 分页
@@ -23,6 +25,14 @@ type Page struct {
 	Offset int   `json:"offset"`
 	Limit  int   `json:"limit"`
 	Total  int64 `json:"total"`
+}
+
+// NewPage ...
+func NewPage(offset, limit int) *Page {
+	return &Page{
+		Offset: offset,
+		Limit:  limit,
+	}
 }
 
 func (p *Page) SetTotal(total int64) {

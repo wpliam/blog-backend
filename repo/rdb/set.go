@@ -3,17 +3,17 @@ package rdb
 import "context"
 
 // SAdd 集合中添加成员
-func (cli *Client) SAdd(ctx context.Context, key string, member interface{}) error {
+func (cli *RedisClient) SAdd(ctx context.Context, key string, member interface{}) error {
 	return cli.UniversalClient.SAdd(ctx, key, member).Err()
 }
 
 // SRem 集合中删除成员
-func (cli *Client) SRem(ctx context.Context, key string, member interface{}) error {
+func (cli *RedisClient) SRem(ctx context.Context, key string, member interface{}) error {
 	return cli.UniversalClient.SRem(ctx, key, member).Err()
 }
 
 // SIsMember 成员是否在列表中
-func (cli *Client) SIsMember(ctx context.Context, key string, member interface{}) bool {
+func (cli *RedisClient) SIsMember(ctx context.Context, key string, member interface{}) bool {
 	result, err := cli.UniversalClient.SIsMember(ctx, key, member).Result()
 	if err != nil {
 		return false

@@ -1,33 +1,22 @@
 package mdb
 
 import (
-	agorm "github.com/wpliap/common-wrap/gorm"
 	"gorm.io/gorm"
-	"sync"
 )
 
-var (
-	gormProxy = make(map[string]*client)
-	rw        sync.RWMutex
-)
-
-const defaultGormName = "gorm"
-
-type client struct {
+type MysqlClient struct {
 	*gorm.DB
 }
 
-func GetGormClient() *client {
-	rw.RLock()
-	defer rw.RUnlock()
-	cli, ok := gormProxy[defaultGormName]
-	if ok && cli != nil {
-		return cli
+// NewMysqlClient 创建一个mysql client
+func NewMysqlClient(db *gorm.DB) *MysqlClient {
+	return &MysqlClient{
+		db,
 	}
-	gormCli := agorm.NewGormProxy("blog.mysql")
-	cli = &client{
-		gormCli,
+}
+
+func filterStatus() func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		return db.Where("status = ?", 1)
 	}
-	gormProxy[defaultGormName] = cli
-	return cli
 }

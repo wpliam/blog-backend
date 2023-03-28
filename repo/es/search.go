@@ -10,56 +10,84 @@ import (
 	"github.com/wpliap/common-wrap/log"
 )
 
-// SearchAllArticle 搜索所有文章
-func (cli *client) SearchAllArticle(ctx context.Context) (*elastic.SearchResult, error) {
-	return cli.SearchArticleList(ctx, nil, 0, nil)
-}
-
 // SearchArticleList es搜索文章
-func (cli *client) SearchArticleList(ctx context.Context,
-	article *model.ArticleContentSummary, order int, page *model.Page) (*elastic.SearchResult, error) {
+func (cli *ElasticClient) SearchArticleList(ctx context.Context, param *model.SearchArticleParam) ([]*model.ArticleContentSummary, int64, error) {
 	searchService := cli.Search(constant.EsArticleIndex)
-	articleQueryCondition(searchService, article)
-	articleOrderCondition(searchService, order)
-	if page != nil && page.Limit > 0 && page.Offset > 0 {
-		searchService.From((page.Offset - 1) * page.Limit).Size(page.Limit)
-	}
-	return searchService.Do(ctx)
-}
-
-func articleQueryCondition(searchService *elastic.SearchService, article *model.ArticleContentSummary) {
-	if article == nil {
-		return
-	}
 	query := elastic.NewBoolQuery()
-	if article.Title != "" {
-		query.Filter(elastic.NewWildcardQuery("title", article.Title))
+	if param.Keyword != "" {
+		query.Filter(elastic.NewWildcardQuery("title", param.Keyword))
 	}
-	if article.Category.Cid > 0 {
-		query.Filter(elastic.NewTermQuery("category.cid", article.Category.Cid))
+	if param.Cid > 0 {
+		query.Filter(elastic.NewTermQuery("cid", param.Cid))
 	}
-	if article.Category.CategoryName != "" {
-		query.Filter(elastic.NewTermQuery("category.categoryName", article.Category.CategoryName))
-	}
-	if article.User.Uid > 0 {
-		query.Filter(elastic.NewTermQuery("user.uid", article.User.Uid))
+	if param.TagID > 0 {
+		query.Filter(elastic.NewBoolQuery().Must(elastic.NewTermQuery("tagIDs", param.TagID)))
 	}
 	searchService.Query(query)
+	switch param.Order {
+	case constant.SearchNewCreateArticle:
+		searchService.Sort("createTime", false)
+	case constant.SearchNewUpdateArticle:
+		searchService.Sort("updateTime", false)
+	}
+	if param != nil && param.Page != nil {
+		searchService.From((param.Page.Offset - 1) * param.Page.Limit).Size(param.Page.Limit)
+	}
+	searchResult, err := searchService.Do(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	return convertArticleResult(searchResult), searchResult.TotalHits(), nil
 }
 
-func articleOrderCondition(searchService *elastic.SearchService, order int) {
-	switch order {
-	case constant.SearchNewArticle:
-		searchService.Sort("createTime", false)
-	case constant.SearchHotArticle:
-		searchService.Sort("viewCount", false)
-	case constant.SearchLikeArticle:
-		searchService.Sort("likeCount", false)
+// GetArticleInfo 根据id搜索文章信息
+func (cli *ElasticClient) GetArticleInfo(ctx context.Context, articleID int64) (*model.ArticleContentSummary, error) {
+	resp, err := cli.Get().Index(constant.EsArticleIndex).Id(fmt.Sprintf("%d", articleID)).Do(ctx)
+	if err != nil {
+		return nil, err
 	}
+	data, err := resp.Source.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	summary := &model.ArticleContentSummary{}
+	if err = json.Unmarshal(data, summary); err != nil {
+		return nil, err
+	}
+	return summary, nil
+}
+
+// GetArticleList 获取文章列表
+func (cli *ElasticClient) GetArticleList(ctx context.Context, ids []int64) ([]*model.ArticleContentSummary, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	var multi []*elastic.MultiGetItem
+	for _, id := range ids {
+		query := elastic.NewMultiGetItem().Index(constant.EsArticleIndex).Id(fmt.Sprintf("%d", id))
+		multi = append(multi, query)
+	}
+	resp, err := cli.MultiGet().Add(multi...).Do(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var contentSummary []*model.ArticleContentSummary
+	for _, doc := range resp.Docs {
+		content, err := doc.Source.MarshalJSON()
+		if err != nil {
+			continue
+		}
+		summary := &model.ArticleContentSummary{}
+		if err = json.Unmarshal(content, summary); err != nil {
+			continue
+		}
+		contentSummary = append(contentSummary, summary)
+	}
+	return contentSummary, nil
 }
 
 // AddArticleToEs 添加文章到es
-func (cli *client) AddArticleToEs(ctx context.Context, article *model.ArticleContentSummary) error {
+func (cli *ElasticClient) AddArticleToEs(ctx context.Context, article *model.ArticleContentSummary) error {
 	exec := cli.Index().Index(constant.EsArticleIndex).Id(fmt.Sprintf("%d", article.ID)).BodyJson(article)
 	resp, err := exec.Do(ctx)
 	if err != nil {
@@ -70,16 +98,20 @@ func (cli *client) AddArticleToEs(ctx context.Context, article *model.ArticleCon
 }
 
 // SearchRandomArticle 随机搜索文章
-func (cli *client) SearchRandomArticle(ctx context.Context) (*elastic.SearchResult, error) {
-	return cli.Search(constant.EsArticleIndex).
+func (cli *ElasticClient) SearchRandomArticle(ctx context.Context) ([]*model.ArticleContentSummary, error) {
+	searchResult, err := cli.Search(constant.EsArticleIndex).
 		SortBy(elastic.NewScriptSort(elastic.NewScript("Math.random()"), "number")).
 		From(0).
-		Size(1).
+		Size(10).
 		Do(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return convertArticleResult(searchResult), nil
 }
 
 // DeleteIndex 删除索引
-func (cli *client) DeleteIndex(ctx context.Context) error {
+func (cli *ElasticClient) DeleteIndex(ctx context.Context) error {
 	_, err := cli.Client.DeleteIndex(constant.EsArticleIndex).Do(ctx)
 	return err
 }
@@ -98,9 +130,9 @@ type ArticleCategoryAggregations struct {
 	} `json:"aggregations"`
 }
 
-func (cli *client) AggregationsArticleCategory(ctx context.Context) (*ArticleCategoryAggregations, error) {
+func (cli *ElasticClient) AggregationsArticleCategory(ctx context.Context) (*ArticleCategoryAggregations, error) {
 	// 根据category.cid分组
-	cidGroup := elastic.NewTermsAggregation().Field("category.cid")
+	cidGroup := elastic.NewTermsAggregation().Field("cid")
 
 	searchSource := elastic.NewSearchSource()
 
@@ -131,8 +163,21 @@ func (cli *client) AggregationsArticleCategory(ctx context.Context) (*ArticleCat
 }
 
 // UpdateArticle 更新文章
-func (cli *client) UpdateArticle(ctx context.Context, articleID int64, field map[string]interface{}) error {
+func (cli *ElasticClient) UpdateArticle(ctx context.Context, articleID int64, field map[string]interface{}) error {
 	_, err := cli.Update().Index(constant.EsArticleIndex).
 		Id(fmt.Sprintf("%d", articleID)).Doc(field).Do(ctx)
 	return err
+}
+
+func convertArticleResult(searchResult *elastic.SearchResult) []*model.ArticleContentSummary {
+	var articles []*model.ArticleContentSummary
+	for _, hit := range searchResult.Hits.Hits {
+		articleInfo := &model.ArticleContentSummary{}
+		if err := json.Unmarshal(hit.Source, articleInfo); err != nil {
+			log.Errorf("SearchArticle Source err:%v", err)
+			continue
+		}
+		articles = append(articles, articleInfo)
+	}
+	return articles
 }

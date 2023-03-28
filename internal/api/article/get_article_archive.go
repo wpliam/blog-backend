@@ -2,37 +2,70 @@ package article
 
 import (
 	"blog-backend/constant"
+	"blog-backend/internal/common/proxy"
 	"blog-backend/model"
-	"blog-backend/repo/es"
-	"blog-backend/util"
+	"blog-backend/util/thread"
 	"github.com/gin-gonic/gin"
 )
 
-type GetArticleArchiveRsp struct {
-	Article map[string][]*model.ArticleContentSummary `json:"article"`
-	Count   int64                                     `json:"count"`
+type GetArticleArchive struct {
+}
+
+type GetArticleArchiveReply struct {
+	Article       map[string][]*model.ArticleContentSummary `json:"article"`
+	ArticleCount  int64                                     `json:"articleCount"`
+	Tags          []*model.Tag                              `json:"tags"`
+	TagCount      int64                                     `json:"tagCount"`
+	Category      []*model.Category                         `json:"category"`
+	CategoryCount int64                                     `json:"categoryCount"`
+}
+
+func (a *GetArticleArchive) Invoke(ctx *gin.Context, proxy proxy.Proxy) (interface{}, error) {
+	return a.GetArticleArchive(ctx, proxy)
 }
 
 // GetArticleArchive 文章归档
-func GetArticleArchive(ctx *gin.Context) (interface{}, error) {
-	searchResult, err := es.GetElasticClient().SearchAllArticle(ctx)
-	if err != nil {
+func (a *GetArticleArchive) GetArticleArchive(ctx *gin.Context, proxy proxy.Proxy) (*GetArticleArchiveReply, error) {
+	rsp := &GetArticleArchiveReply{}
+	handler := make([]func() error, 0)
+	handler = append(handler, func() error {
+		articles, total, err := proxy.GetEsProxy().SearchArticleList(ctx, &model.SearchArticleParam{})
+		if err != nil {
+			return err
+		}
+		rsp.Article = articleGroupBy(articles)
+		rsp.ArticleCount = total
+		return nil
+	})
+	handler = append(handler, func() error {
+		tags, err := proxy.GetGormProxy().GetTagList()
+		if err != nil {
+			return err
+		}
+		rsp.Tags = tags
+		rsp.TagCount = int64(len(tags))
+		return nil
+	})
+	handler = append(handler, func() error {
+		categoryList, err := proxy.GetGormProxy().GetCategoryList()
+		if err != nil {
+			return err
+		}
+		rsp.Category = categoryList
+		rsp.CategoryCount = int64(len(categoryList))
+		return nil
+	})
+	if err := thread.GoAndWait(handler...); err != nil {
 		return nil, err
-	}
-	articleList := convertArticleResult(searchResult)
-	articleGroupBy(articleList)
-	rsp := GetArticleArchiveRsp{
-		Article: articleGroupBy(articleList),
-		Count:   searchResult.TotalHits(),
 	}
 	return rsp, nil
 }
 
 func articleGroupBy(articleList []*model.ArticleContentSummary) map[string][]*model.ArticleContentSummary {
 	articleGroup := make(map[string][]*model.ArticleContentSummary)
-	for _, item := range articleList {
-		key := util.ParseDateTime(constant.MonthSubTableSuffix, item.CreateTime)
-		articleGroup[key] = append(articleGroup[key], item)
+	for _, article := range articleList {
+		key := article.CreateTime.Format(constant.MonthSubTableSuffix)
+		articleGroup[key] = append(articleGroup[key], article)
 	}
 	return articleGroup
 }

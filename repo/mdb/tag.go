@@ -5,7 +5,7 @@ import (
 )
 
 // GetTagList 获取标签
-func (cli *client) GetTagList(ids ...int64) ([]*model.Tag, error) {
+func (cli *MysqlClient) GetTagList(ids ...int64) ([]*model.Tag, error) {
 	var tags []*model.Tag
 	where := make(map[string]interface{})
 	where["status"] = 1
@@ -19,6 +19,6 @@ func (cli *client) GetTagList(ids ...int64) ([]*model.Tag, error) {
 }
 
 // FirstOrCreateTag tag_name存在查询记录,不存在则创建记录
-func (cli *client) FirstOrCreateTag(tag *model.Tag) error {
+func (cli *MysqlClient) FirstOrCreateTag(tag *model.Tag) error {
 	return cli.Where(&model.Tag{TagName: tag.TagName}).FirstOrCreate(&tag).Error
 }

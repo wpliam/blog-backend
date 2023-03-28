@@ -1,9 +1,8 @@
 package model
 
 import (
-	"blog-backend/constant"
-	"blog-backend/util"
 	"gorm.io/gorm"
+	"time"
 )
 
 // Comment 评论表
@@ -24,16 +23,14 @@ func (*Comment) TableName() string {
 }
 
 func (c *Comment) AfterFind(db *gorm.DB) error {
-	c.CreateTime = util.ParseDateTime(constant.TimeLayout, c.CreateTime)
-	c.UpdateTime = util.ParseDateTime(constant.TimeLayout, c.UpdateTime)
 	return nil
 }
 
-type CommentInfo struct {
-	ID             int64          `json:"id"`
-	CreateTime     string         `json:"createTime"`
-	Content        string         `json:"content"`
-	UserInfo       *User          `json:"userInfo"`
-	ReplyUserInfo  *User          `json:"replyUserInfo"`
-	SubCommentInfo []*CommentInfo `json:"subCommentInfo"`
+type CommentContent struct {
+	ID         int64             `json:"id"`
+	CreateTime time.Time         `json:"createTime"`
+	Content    string            `json:"content"`
+	User       *User             `json:"user"`
+	ReplyUser  *User             `json:"replyUser"`
+	SubComment []*CommentContent `json:"subComment"`
 }

@@ -2,7 +2,7 @@ package mdb
 
 import "blog-backend/model"
 
-func (cli *client) GetUserInfo(userID int64) (*model.User, error) {
+func (cli *MysqlClient) GetUserInfo(userID int64) (*model.User, error) {
 	var user *model.User
 	if err := cli.First(&user, "id = ?", userID).Error; err != nil {
 		return nil, err
@@ -10,7 +10,7 @@ func (cli *client) GetUserInfo(userID int64) (*model.User, error) {
 	return user, nil
 }
 
-func (cli *client) GetAccountInfo(username string) (*model.Account, error) {
+func (cli *MysqlClient) GetAccountInfo(username string) (*model.Account, error) {
 	var account *model.Account
 	if err := cli.First(&account, "username = ?", username).Error; err != nil {
 		return nil, err
@@ -18,7 +18,7 @@ func (cli *client) GetAccountInfo(username string) (*model.Account, error) {
 	return account, nil
 }
 
-func (cli *client) BatchGetUserInfo(userIDs []int64) (map[int64]*model.User, error) {
+func (cli *MysqlClient) BatchGetUserInfo(userIDs []int64) (map[int64]*model.User, error) {
 	if len(userIDs) == 0 {
 		return nil, nil
 	}

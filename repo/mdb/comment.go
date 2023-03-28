@@ -2,7 +2,7 @@ package mdb
 
 import "blog-backend/model"
 
-func (cli *client) GetCommentInfo(articleID int64, parentID int64) ([]*model.Comment, error) {
+func (cli *MysqlClient) GetCommentInfo(articleID int64, parentID int64) ([]*model.Comment, error) {
 	var comments []*model.Comment
 	where := make(map[string]interface{})
 	where["status"] = 1
@@ -13,7 +13,7 @@ func (cli *client) GetCommentInfo(articleID int64, parentID int64) ([]*model.Com
 	}
 	return comments, nil
 }
-func (cli *client) GetCommentUserIDs(articleID int64) ([]int64, error) {
+func (cli *MysqlClient) GetCommentUserIDs(articleID int64) ([]int64, error) {
 	var userIDs []int64
 	where := make(map[string]interface{})
 	where["status"] = 1
@@ -26,7 +26,7 @@ func (cli *client) GetCommentUserIDs(articleID int64) ([]int64, error) {
 }
 
 // GetArticleCommentCount 获取文章评论数
-func (cli *client) GetArticleCommentCount(articleID int64) (int64, error) {
+func (cli *MysqlClient) GetArticleCommentCount(articleID int64) (int64, error) {
 	var count int64
 	where := make(map[string]interface{})
 	where["status"] = 1
@@ -38,6 +38,6 @@ func (cli *client) GetArticleCommentCount(articleID int64) (int64, error) {
 }
 
 // SetCommentInfo 设置评论信息
-func (cli *client) SetCommentInfo(comment *model.Comment) error {
+func (cli *MysqlClient) SetCommentInfo(comment *model.Comment) error {
 	return cli.Create(&comment).Error
 }

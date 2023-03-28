@@ -1,9 +1,6 @@
 package router
 
 import (
-	"blog-backend/internal/api/article"
-	"blog-backend/internal/api/banner"
-	"blog-backend/internal/api/tag"
 	"blog-backend/middleware"
 	"blog-backend/repo/auth/jwtauth"
 	"github.com/gin-gonic/gin"
@@ -14,18 +11,21 @@ func InitRouter() *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	middle := &middleware.Middleware{
-		JwtAuth: jwtauth.DefaultJwtAuth,
+		Jwt: jwtauth.DefaultJwtAuth,
 	}
 	r.Use(middle.Options())
+	enter := New()
+	enter.WriteFunc()
 	apiGroup := r.Group("/api")
 	{
-		apiGroup.POST("search_article", WrapHandler(article.SearchArticle))
-		apiGroup.GET("search_random_article", WrapHandler(article.SearchRandomArticle))
-		apiGroup.POST("read_article", WrapHandler(article.ReadArticle))
-		apiGroup.POST("aggregation_article_category", WrapHandler(article.AggregationArticleCategory))
-
-		apiGroup.POST("get_banner", WrapHandler(banner.GetBanner))
-		apiGroup.POST("get_tag", WrapHandler(tag.GetTag))
+		// 获取卡片信息 1:获取分类卡片 2:获取标签卡片 3:获取banner
+		apiGroup.GET("get_card_info/:cardType", enter.Wrapper(GetCardInfoName))
+		// 读取文章信息
+		apiGroup.GET("read_article/:articleID", enter.Wrapper(ReadArticleName))
+		// 获取文章归档
+		apiGroup.GET("get_article_archive", enter.Wrapper(GetArticleArchiveName))
+		// 搜索文章
+		apiGroup.POST("search_article_list", enter.Wrapper(SearchArticleListName))
 	}
 	return r
 }

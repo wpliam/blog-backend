@@ -3,7 +3,7 @@ package mdb
 import "blog-backend/model"
 
 // GetArticleTagID 获取文章标签id
-func (cli *client) GetArticleTagID(articleID int64) ([]int64, error) {
+func (cli *MysqlClient) GetArticleTagID(articleID int64) ([]int64, error) {
 	var ids []int64
 	if err := cli.
 		Model(&model.ArticleTag{}).
@@ -15,6 +15,6 @@ func (cli *client) GetArticleTagID(articleID int64) ([]int64, error) {
 	return ids, nil
 }
 
-func (cli *client) BatchInsertArticleTagID(articleTags []*model.ArticleTag) error {
+func (cli *MysqlClient) BatchInsertArticleTagID(articleTags []*model.ArticleTag) error {
 	return cli.CreateInBatches(&articleTags, 10).Error
 }

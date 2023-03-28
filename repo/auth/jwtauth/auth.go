@@ -9,18 +9,19 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
+// JwtAuth jwt鉴权
 type JwtAuth struct {
 	*options
 }
 
 type CustomClaims struct {
-	UserID int64
+	Uid int64
 	jwt.RegisteredClaims
 }
 
-func (j *JwtAuth) GenToken(ctx *gin.Context, userID int64) (string, error) {
+func (j *JwtAuth) GenToken(ctx *gin.Context, uid int64) (string, error) {
 	claims := &CustomClaims{
-		UserID: userID,
+		Uid: uid,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: &jwt.NumericDate{
 				Time: time.Now().Add(j.expired),
@@ -48,12 +49,12 @@ func (j *JwtAuth) ParseToken(ctx *gin.Context) error {
 	return nil
 }
 
-func (j *JwtAuth) ParseUserID(ctx *gin.Context) (int64, error) {
+func (j *JwtAuth) ParseUid(ctx *gin.Context) (int64, error) {
 	claims, err := j.ParseClaims(ctx)
 	if err != nil {
 		return 0, err
 	}
-	return claims.UserID, nil
+	return claims.Uid, nil
 }
 
 func (j *JwtAuth) ParseClaims(ctx *gin.Context) (*CustomClaims, error) {

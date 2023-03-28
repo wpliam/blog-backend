@@ -1,7 +1,7 @@
 package constant
 
 const (
-	ArticleHandlerTypeNotExist = 10001
+	AuthFail = 10001
 )
 
 const (
@@ -21,7 +21,6 @@ const (
 )
 
 const (
-	SearchNewArticle  = 1 // SearchNewArticle 搜索最新文章
-	SearchHotArticle  = 2 // SearchHotArticle 搜索热门文章
-	SearchLikeArticle = 3 // SearchLikeArticle 根据点赞搜索
+	SearchNewCreateArticle = 1 // SearchNewCreateArticle 按照创建时间排序
+	SearchNewUpdateArticle = 2 // SearchNewUpdateArticle 按照更新时间排序
 )

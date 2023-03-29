@@ -1,6 +1,7 @@
 package mdb
 
 import (
+	agorm "github.com/wpliap/common-wrap/gorm"
 	"gorm.io/gorm"
 )
 
@@ -9,9 +10,9 @@ type MysqlClient struct {
 }
 
 // NewMysqlClient 创建一个mysql client
-func NewMysqlClient(db *gorm.DB) *MysqlClient {
+func NewMysqlClient(name string) *MysqlClient {
 	return &MysqlClient{
-		db,
+		agorm.NewGormProxy(name),
 	}
 }
 

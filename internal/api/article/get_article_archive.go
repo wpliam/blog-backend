@@ -2,7 +2,7 @@ package article
 
 import (
 	"blog-backend/constant"
-	"blog-backend/internal/common/proxy"
+	"blog-backend/global/proxy"
 	"blog-backend/model"
 	"blog-backend/util/thread"
 	"github.com/gin-gonic/gin"

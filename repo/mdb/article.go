@@ -19,6 +19,7 @@ func (cli *MysqlClient) GetAllArticle() ([]*model.Article, error) {
 func (cli *MysqlClient) GetArticleInfo(articleID int64) (*model.Article, error) {
 	var article *model.Article
 	if err := cli.
+		Preload("Category").
 		Where("id = ? and status = ?", articleID, 1).
 		First(&article).
 		Error; err != nil {
@@ -51,6 +52,15 @@ func (cli *MysqlClient) GetPrevArticle(articleID int64) (*model.Article, error) 
 		return nil, err
 	}
 	return article, nil
+}
+
+// GetArticleContentInfo 获取文章内容信息
+func (cli *MysqlClient) GetArticleContentInfo(articleID int64) (*model.ArticleContentInfo, error) {
+	var content *model.ArticleContentInfo
+	if err := cli.Scopes(filterStatus()).First(&content, "id = ?", articleID).Error; err != nil {
+		return nil, err
+	}
+	return content, nil
 }
 
 // GetCategoryCard 获取分类卡片

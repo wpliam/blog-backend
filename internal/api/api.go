@@ -1,7 +1,7 @@
-package client
+package api
 
 import (
-	"blog-backend/internal/common/proxy"
+	"blog-backend/global/proxy"
 	"github.com/gin-gonic/gin"
 )
 

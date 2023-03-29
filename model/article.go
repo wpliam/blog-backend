@@ -1,9 +1,5 @@
 package model
 
-import (
-	"gorm.io/gorm"
-)
-
 // Article 文章表
 type Article struct {
 	ArticleBaseInfo
@@ -20,8 +16,17 @@ func (*Article) TableName() string {
 	return ArticleTableName
 }
 
-func (a *Article) AfterFind(db *gorm.DB) error {
-	return nil
+// ArticleContentInfo 文章内容信息
+type ArticleContentInfo struct {
+	Content      string `json:"content" gorm:"column:content"`            // 文章内容
+	LikeCount    int64  `json:"likeCount" gorm:"column:like_count"`       // 文章点赞数
+	ViewCount    int64  `json:"viewCount" gorm:"column:view_count"`       // 文章阅读数量
+	CollectCount int64  `json:"collectCount" gorm:"column:collect_count"` // 文章收藏数
+}
+
+// TableName 文章表名
+func (*ArticleContentInfo) TableName() string {
+	return ArticleTableName
 }
 
 // ArticleBaseInfo 文章基本信息

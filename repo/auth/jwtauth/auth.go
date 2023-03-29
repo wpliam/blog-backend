@@ -39,13 +39,6 @@ func (j *JwtAuth) ParseToken(ctx *gin.Context) error {
 	if !claims.VerifyExpiresAt(time.Now(), false) {
 		return fmt.Errorf("access token expired")
 	}
-	//token, err := rdb.Get(ctx, util.GetLoginKey(claims.UserID))
-	//if err != nil {
-	//	return err
-	//}
-	//if token != j.GetToken(ctx) {
-	//	return fmt.Errorf("登录信息不匹配")
-	//}
 	return nil
 }
 

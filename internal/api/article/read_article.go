@@ -1,7 +1,7 @@
 package article
 
 import (
-	"blog-backend/internal/common/proxy"
+	"blog-backend/global/proxy"
 	"blog-backend/model"
 	"blog-backend/util/thread"
 	"github.com/gin-gonic/gin"
@@ -14,7 +14,10 @@ type ReadArticle struct {
 }
 
 type ReadArticleReply struct {
-	Article   *model.Article                 `json:"article"`   // 文章信息
+	Article struct {
+		*model.ArticleContentSummary
+		*model.ArticleContentInfo
+	} `json:"article"`
 	Next      *model.Article                 `json:"next"`      // 下一篇文章
 	Prev      *model.Article                 `json:"prev"`      // 上一篇文章
 	Tags      []*model.Tag                   `json:"tags"`      // 文章标签
@@ -33,15 +36,16 @@ func (r *ReadArticle) Invoke(ctx *gin.Context, proxy proxy.Proxy) (interface{}, 
 
 // ReadArticle 读取文章
 func (r *ReadArticle) ReadArticle(ctx *gin.Context, proxy proxy.Proxy) (*ReadArticleReply, error) {
-	articleInfo, err := proxy.GetEsProxy().GetArticleInfo(ctx, r.ArticleID)
+	summary, err := proxy.GetEsProxy().GetArticleInfo(ctx, r.ArticleID)
 	if err != nil {
 		return nil, err
 	}
 	rsp := &ReadArticleReply{}
+	rsp.Article.ArticleContentSummary = summary
 	handler := make([]func() error, 0)
 	handler = append(handler, func() error {
 		var err error
-		rsp.Article, err = proxy.GetGormProxy().GetArticleInfo(r.ArticleID)
+		rsp.Article.ArticleContentInfo, err = proxy.GetGormProxy().GetArticleContentInfo(r.ArticleID)
 		return err
 	})
 	handler = append(handler, func() error {
@@ -56,12 +60,12 @@ func (r *ReadArticle) ReadArticle(ctx *gin.Context, proxy proxy.Proxy) (*ReadArt
 	})
 	handler = append(handler, func() error {
 		var err error
-		rsp.Tags, err = proxy.GetGormProxy().GetTagList(articleInfo.TagIDs...)
+		rsp.Tags, err = proxy.GetGormProxy().GetTagList(summary.TagIDs...)
 		return err
 	})
 	handler = append(handler, func() error {
 		var err error
-		rsp.Recommend, err = proxy.GetEsProxy().GetArticleList(ctx, articleInfo.RecommendIDs)
+		rsp.Recommend, err = proxy.GetEsProxy().GetArticleList(ctx, summary.RecommendIDs)
 		return err
 	})
 	handler = append(handler, func() error {

@@ -1,7 +1,7 @@
 package article
 
 import (
-	"blog-backend/internal/common/proxy"
+	"blog-backend/global/proxy"
 	"blog-backend/model"
 	"github.com/gin-gonic/gin"
 	"github.com/wpliap/common-wrap/log"
@@ -38,6 +38,7 @@ func (s *SearchArticle) Invoke(ctx *gin.Context, proxy proxy.Proxy) (interface{}
 // SearchArticleList 搜索文章列表
 func (s *SearchArticle) SearchArticleList(ctx *gin.Context, proxy proxy.Proxy) (*SearchArticleReply, error) {
 	param := s.SearchArticleParam()
+	log.Infof("param page:%+v", param.Page)
 	articles, total, err := proxy.GetEsProxy().SearchArticleList(ctx, param)
 	if err != nil {
 		log.Errorf("SearchArticle search err:%v param:%+v", err, param)

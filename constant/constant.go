@@ -1,7 +1,9 @@
 package constant
 
+import "time"
+
 const (
-	AuthFail = 10001
+	LoginValidTime = 24 * time.Hour // 登录有效时间
 )
 
 const (

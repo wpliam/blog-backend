@@ -37,6 +37,18 @@ func (cli *MysqlClient) GetArticleCommentCount(articleID int64) (int64, error) {
 	return count, nil
 }
 
+// GetUserCommentCount 获取用户评论数
+func (cli *MysqlClient) GetUserCommentCount(uid int64) (int64, error) {
+	var count int64
+	where := make(map[string]interface{})
+	where["status"] = 1
+	where["user_id"] = uid
+	if err := cli.Model(&model.Comment{}).Where(where).Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 // SetCommentInfo 设置评论信息
 func (cli *MysqlClient) SetCommentInfo(comment *model.Comment) error {
 	return cli.Create(&comment).Error

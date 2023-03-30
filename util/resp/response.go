@@ -26,3 +26,10 @@ func ResponseFail(ctx *gin.Context, err error) {
 		Msg:  errs.Msg(err),
 	})
 }
+
+func ResponseUnauthorized(ctx *gin.Context, msg string) {
+	ctx.AbortWithStatusJSON(http.StatusOK, &Response{
+		Code: http.StatusUnauthorized,
+		Msg:  msg,
+	})
+}

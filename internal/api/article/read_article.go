@@ -49,16 +49,20 @@ func (a *articleImpl) ReadArticleImpl(ctx *gin.Context, articleID int64) (*ReadA
 		rsp.Prev, err = dbCli.GetPrevArticle(articleID)
 		return err
 	})
-	handler = append(handler, func() error {
-		var err error
-		rsp.Tags, err = dbCli.GetTagList(summary.TagIDs...)
-		return err
-	})
-	handler = append(handler, func() error {
-		var err error
-		rsp.Recommend, err = esCli.GetArticleList(ctx, summary.RecommendIDs)
-		return err
-	})
+	if len(summary.TagIDs) > 0 {
+		handler = append(handler, func() error {
+			var err error
+			rsp.Tags, err = dbCli.GetTagList(summary.TagIDs...)
+			return err
+		})
+	}
+	if len(summary.RecommendIDs) > 0 {
+		handler = append(handler, func() error {
+			var err error
+			rsp.Recommend, err = esCli.GetArticleList(ctx, summary.RecommendIDs)
+			return err
+		})
+	}
 	handler = append(handler, func() error {
 		var err error
 		rsp.Comment, err = a.GetArticleComment(articleID)

@@ -1,6 +1,7 @@
 package jwtauth
 
 import (
+	"blog-backend/constant"
 	"github.com/golang-jwt/jwt/v4"
 	"time"
 )
@@ -10,7 +11,7 @@ var jwtKey = []byte("apple")
 
 var defaultOptions = &options{
 	signKey: jwtKey,
-	expired: 24 * time.Hour,
+	expired: constant.LoginValidTime,
 	keyFunc: func(token *jwt.Token) (interface{}, error) {
 		return jwtKey, nil
 	},

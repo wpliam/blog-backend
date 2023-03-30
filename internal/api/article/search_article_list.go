@@ -25,7 +25,6 @@ type SearchArticleReply struct {
 // SearchArticleListImpl 搜索文章列表
 func (a *articleImpl) SearchArticleListImpl(ctx *gin.Context, req *SearchArticleReq) (*SearchArticleReply, error) {
 	param := a.SearchArticleParam(req)
-	log.Infof("param page:%+v", param.Page)
 	articles, total, err := a.GetElasticProxy().SearchArticleList(ctx, param)
 	if err != nil {
 		log.Errorf("SearchArticle search err:%v param:%+v", err, param)

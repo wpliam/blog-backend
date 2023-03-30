@@ -4,21 +4,23 @@ import (
 	"blog-backend/internal/api/article"
 	"blog-backend/internal/api/banner"
 	"blog-backend/internal/api/category"
+	"blog-backend/internal/api/shared"
 	"blog-backend/internal/api/tag"
 	"blog-backend/internal/api/user"
+	"blog-backend/util/resp"
 	"github.com/gin-gonic/gin"
-	"github.com/wpliap/common-wrap/errs"
-	"net/http"
 )
 
 // initRouter 服务路由初始化
 func (s *Server) initRouter() {
+	s.router.Use(s.middle.Options())
 	apiGroup := s.router.Group("api")
 	s.initArticleRouter(apiGroup)
 	s.initBannerRouter(apiGroup)
 	s.initCategoryRouter(apiGroup)
 	s.initTagRouter(apiGroup)
 	s.initUserRouter(apiGroup)
+	s.initSharedRouter(apiGroup)
 }
 
 func (s *Server) initArticleRouter(apiGroup *gin.RouterGroup) {
@@ -47,6 +49,32 @@ func (s *Server) initTagRouter(apiGroup *gin.RouterGroup) {
 func (s *Server) initUserRouter(apiGroup *gin.RouterGroup) {
 	u := user.NewUserService(s.proxy)
 	apiGroup.POST("login", s.wrapperHandler(u.Login))
+	apiGroup.POST("logout", s.wrapper(u.Logout))
+	apiGroup.POST("refresh_token", s.middle.Refresh(), s.wrapperHandler(u.RefreshToken))
+	apiGroup.GET("static_user_info/:uid", s.wrapperHandler(u.StaticUserInfo))
+}
+
+func (s *Server) initSharedRouter(apiGroup *gin.RouterGroup) {
+	share := shared.NewSharedService(s.proxy)
+	apiGroup.POST("add_view_count", s.wrapperHandler(share.AddViewCount))
+	loginAuthGroup := apiGroup.Use(s.middle.LoginAuth())
+	{
+		loginAuthGroup.POST("give_collect", s.wrapperHandler(share.GiveCollect))
+		loginAuthGroup.POST("give_thumb", s.wrapperHandler(share.GiveThumb))
+		loginAuthGroup.POST("give_follow", s.wrapperHandler(share.GiveFollow))
+	}
+}
+
+type wrapper func(ctx *gin.Context) error
+
+func (s *Server) wrapper(h wrapper) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		if err := h(ctx); err != nil {
+			resp.ResponseFail(ctx, err)
+			return
+		}
+		resp.ResponseOk(ctx, nil)
+	}
 }
 
 type wrapperHandler func(ctx *gin.Context) (interface{}, error)
@@ -55,16 +83,9 @@ func (s *Server) wrapperHandler(h wrapperHandler) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		data, err := h(ctx)
 		if err != nil {
-			ctx.JSON(http.StatusOK, gin.H{
-				"code": errs.Code(err),
-				"msg":  errs.Msg(err),
-				"data": nil,
-			})
+			resp.ResponseFail(ctx, err)
+			return
 		}
-		ctx.JSON(http.StatusOK, gin.H{
-			"code": 0,
-			"msg":  "",
-			"data": data,
-		})
+		resp.ResponseOk(ctx, data)
 	}
 }

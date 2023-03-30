@@ -2,18 +2,25 @@ package server
 
 import (
 	"blog-backend/internal/proxy"
+	"blog-backend/middleware"
+	"blog-backend/repo/auth/jwtauth"
 	"github.com/gin-gonic/gin"
 )
 
 type Option func(*Server)
 
 func defaultServerOption() *Server {
+	proxyService := proxy.NewProxyService()
 	return &Server{
 		router:              gin.Default(),
 		port:                8888,
 		DisableServerRouter: false,
 		MaxShutDownTimeout:  0,
-		proxy:               proxy.NewProxyService(),
+		proxy:               proxyService,
+		middle: &middleware.Middleware{
+			Jwt:        jwtauth.DefaultJwtAuth,
+			RedisProxy: proxyService.GetRedisProxy(),
+		},
 	}
 }
 

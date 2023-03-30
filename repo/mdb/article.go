@@ -92,3 +92,32 @@ func (cli *MysqlClient) GetHotArticle() ([]*model.Article, error) {
 	}
 	return articles, nil
 }
+
+// GetUserArticleCount 获取用户文章数
+func (cli *MysqlClient) GetUserArticleCount(uid int64) (int64, error) {
+	var count int64
+	if err := cli.
+		Model(&model.Article{}).
+		Where("user_id = ? and status = ?", uid, 1).
+		Count(&count).
+		Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+// GetUserViewCount 获取用户文章总浏览量
+func (cli *MysqlClient) GetUserViewCount(uid int64) (int64, error) {
+	viewInfo := struct {
+		Count int64 `json:"count"`
+	}{}
+	if err := cli.
+		Model(&model.Article{}).
+		Select("sum(view_count) as count").
+		Where("user_id = ? and status = ?", uid, 1).
+		Scan(&viewInfo).
+		Error; err != nil {
+		return 0, err
+	}
+	return viewInfo.Count, nil
+}

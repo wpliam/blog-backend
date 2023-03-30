@@ -2,9 +2,11 @@ package server
 
 import (
 	"blog-backend/internal/service"
+	"blog-backend/middleware"
 	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/wpliap/common-wrap/log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -13,9 +15,10 @@ import (
 )
 
 type Server struct {
-	router *gin.Engine          // 路由
-	port   uint16               // 端口
-	proxy  service.ProxyService // 代理
+	router *gin.Engine            // 路由
+	port   uint16                 // 端口
+	proxy  service.ProxyService   // 代理
+	middle *middleware.Middleware // 中间件
 
 	DisableServerRouter bool // 禁用服务路由
 	MaxShutDownTimeout  int  // Shutdown 的超时时间 ms
@@ -53,7 +56,7 @@ func (s *Server) Run() {
 	}
 	go func() {
 		if err := svr.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			fmt.Printf("Server ListenAndServe err:%v", err)
+			log.Errorf("Server ListenAndServe err:%v", err)
 		}
 	}()
 	c := make(chan os.Signal, 1)
@@ -68,6 +71,6 @@ func (s *Server) Run() {
 		defer cancel()
 	}
 	if err := svr.Shutdown(ctx); err != nil {
-		fmt.Printf("Server Shutdown err:%v \n", err)
+		log.Errorf("Server Shutdown err:%v", err)
 	}
 }

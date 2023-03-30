@@ -1,15 +1,19 @@
 package mdb
 
-import "blog-backend/model"
+import (
+	"blog-backend/model"
+)
 
-func (cli *MysqlClient) GetUserInfo(userID int64) (*model.User, error) {
+// GetUserInfo 获取用户信息
+func (cli *MysqlClient) GetUserInfo(uid int64) (*model.User, error) {
 	var user *model.User
-	if err := cli.First(&user, "id = ?", userID).Error; err != nil {
+	if err := cli.First(&user, "id = ?", uid).Error; err != nil {
 		return nil, err
 	}
 	return user, nil
 }
 
+// GetAccountInfo 获取账号信息 主要用于登录验证
 func (cli *MysqlClient) GetAccountInfo(username string) (*model.Account, error) {
 	var account *model.Account
 	if err := cli.First(&account, "username = ?", username).Error; err != nil {
@@ -18,6 +22,7 @@ func (cli *MysqlClient) GetAccountInfo(username string) (*model.Account, error) 
 	return account, nil
 }
 
+// BatchGetUserInfo 批量获取用户信息
 func (cli *MysqlClient) BatchGetUserInfo(userIDs []int64) (map[int64]*model.User, error) {
 	if len(userIDs) == 0 {
 		return nil, nil
@@ -33,4 +38,9 @@ func (cli *MysqlClient) BatchGetUserInfo(userIDs []int64) (map[int64]*model.User
 		userInfo[user.ID] = user
 	}
 	return userInfo, nil
+}
+
+// UpdateUserInfo 更新用户登录信息
+func (cli *MysqlClient) UpdateUserInfo(uid int64, field map[string]interface{}) error {
+	return cli.Model(&model.User{}).Where("id = ?", uid).Updates(field).Error
 }

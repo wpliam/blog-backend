@@ -1,7 +1,6 @@
 package banner
 
 import (
-	"blog-backend/global/proxy"
 	"blog-backend/model"
 	"github.com/gin-gonic/gin"
 )
@@ -13,8 +12,8 @@ type GetBannerReply struct {
 	Banners []*model.Banner `json:"banners"`
 }
 
-func (b *GetBannerCard) Invoke(ctx *gin.Context, proxy proxy.Proxy) (interface{}, error) {
-	banners, err := proxy.GetGormProxy().GetBannerList()
+func (b *bannerImpl) GetBannerCardImpl(ctx *gin.Context) (*GetBannerReply, error) {
+	banners, err := b.GetGormProxy().GetBannerList()
 	if err != nil {
 		return nil, err
 	}

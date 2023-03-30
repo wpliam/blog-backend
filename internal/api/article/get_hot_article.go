@@ -1,7 +1,6 @@
 package article
 
 import (
-	"blog-backend/global/proxy"
 	"blog-backend/model"
 	"github.com/gin-gonic/gin"
 )
@@ -13,9 +12,9 @@ type GetArticleReply struct {
 	Articles []*model.Article `json:"articles"`
 }
 
-// Invoke 获取热门文章
-func (a *GetHotArticle) Invoke(ctx *gin.Context, proxy proxy.Proxy) (interface{}, error) {
-	articles, err := proxy.GetGormProxy().GetHotArticle()
+// GetHotArticleImpl 获取热门文章
+func (a *articleImpl) GetHotArticleImpl(ctx *gin.Context) (interface{}, error) {
+	articles, err := a.GetGormProxy().GetHotArticle()
 	if err != nil {
 		return nil, err
 	}

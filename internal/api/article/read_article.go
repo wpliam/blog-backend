@@ -1,12 +1,10 @@
 package article
 
 import (
-	"blog-backend/global/proxy"
 	"blog-backend/model"
 	"blog-backend/util/thread"
 	"github.com/gin-gonic/gin"
 	"github.com/wpliap/common-wrap/log"
-	"strconv"
 )
 
 type ReadArticle struct {
@@ -25,18 +23,11 @@ type ReadArticleReply struct {
 	Comment   []*model.CommentContent        `json:"comment"`   // 文章评论
 }
 
-func (r *ReadArticle) Invoke(ctx *gin.Context, proxy proxy.Proxy) (interface{}, error) {
-	articleID, err := strconv.ParseInt(ctx.Param("articleID"), 10, 64)
-	if err != nil {
-		return nil, err
-	}
-	r.ArticleID = articleID
-	return r.ReadArticle(ctx, proxy)
-}
-
-// ReadArticle 读取文章
-func (r *ReadArticle) ReadArticle(ctx *gin.Context, proxy proxy.Proxy) (*ReadArticleReply, error) {
-	summary, err := proxy.GetEsProxy().GetArticleInfo(ctx, r.ArticleID)
+// ReadArticleImpl 读取文章
+func (a *articleImpl) ReadArticleImpl(ctx *gin.Context, articleID int64) (*ReadArticleReply, error) {
+	dbCli := a.GetGormProxy()
+	esCli := a.GetElasticProxy()
+	summary, err := esCli.GetArticleInfo(ctx, articleID)
 	if err != nil {
 		return nil, err
 	}
@@ -45,58 +36,59 @@ func (r *ReadArticle) ReadArticle(ctx *gin.Context, proxy proxy.Proxy) (*ReadArt
 	handler := make([]func() error, 0)
 	handler = append(handler, func() error {
 		var err error
-		rsp.Article.ArticleContentInfo, err = proxy.GetGormProxy().GetArticleContentInfo(r.ArticleID)
+		rsp.Article.ArticleContentInfo, err = dbCli.GetArticleContentInfo(articleID)
 		return err
 	})
 	handler = append(handler, func() error {
 		var err error
-		rsp.Next, err = proxy.GetGormProxy().GetNextArticle(r.ArticleID)
+		rsp.Next, err = dbCli.GetNextArticle(articleID)
 		return err
 	})
 	handler = append(handler, func() error {
 		var err error
-		rsp.Prev, err = proxy.GetGormProxy().GetPrevArticle(r.ArticleID)
+		rsp.Prev, err = dbCli.GetPrevArticle(articleID)
 		return err
 	})
 	handler = append(handler, func() error {
 		var err error
-		rsp.Tags, err = proxy.GetGormProxy().GetTagList(summary.TagIDs...)
+		rsp.Tags, err = dbCli.GetTagList(summary.TagIDs...)
 		return err
 	})
 	handler = append(handler, func() error {
 		var err error
-		rsp.Recommend, err = proxy.GetEsProxy().GetArticleList(ctx, summary.RecommendIDs)
+		rsp.Recommend, err = esCli.GetArticleList(ctx, summary.RecommendIDs)
 		return err
 	})
 	handler = append(handler, func() error {
 		var err error
-		rsp.Comment, err = GetArticleComment(r.ArticleID, proxy)
+		rsp.Comment, err = a.GetArticleComment(articleID)
 		return err
 	})
 	if err = thread.GoAndWait(handler...); err != nil {
-		log.Errorf("ReadArticle err:%v articleID:%s", err, r.ArticleID)
+		log.Errorf("ReadArticle err:%v articleID:%s", err, articleID)
 		return nil, err
 	}
 	return rsp, nil
 }
 
 // GetArticleComment 获取文章的评论
-func GetArticleComment(articleID int64, proxy proxy.Proxy) ([]*model.CommentContent, error) {
-	userIDs, err := proxy.GetGormProxy().GetCommentUserIDs(articleID)
+func (a *articleImpl) GetArticleComment(articleID int64) ([]*model.CommentContent, error) {
+	dbCli := a.GetGormProxy()
+	userIDs, err := dbCli.GetCommentUserIDs(articleID)
 	if err != nil {
 		return nil, err
 	}
-	userInfo, err := proxy.GetGormProxy().BatchGetUserInfo(userIDs)
+	userInfo, err := dbCli.BatchGetUserInfo(userIDs)
 	if err != nil {
 		return nil, err
 	}
-	commentList, err := proxy.GetGormProxy().GetCommentInfo(articleID, 0)
+	commentList, err := dbCli.GetCommentInfo(articleID, 0)
 	if err != nil {
 		return nil, err
 	}
 	var list []*model.CommentContent
 	for _, root := range commentList {
-		subComment, err := proxy.GetGormProxy().GetCommentInfo(articleID, root.ID)
+		subComment, err := dbCli.GetCommentInfo(articleID, root.ID)
 		if err != nil {
 			return nil, err
 		}

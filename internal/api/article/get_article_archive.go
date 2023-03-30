@@ -2,13 +2,12 @@ package article
 
 import (
 	"blog-backend/constant"
-	"blog-backend/global/proxy"
 	"blog-backend/model"
 	"blog-backend/util/thread"
 	"github.com/gin-gonic/gin"
 )
 
-type GetArticleArchive struct {
+type GetArticleArchiveReq struct {
 }
 
 type GetArticleArchiveReply struct {
@@ -20,16 +19,12 @@ type GetArticleArchiveReply struct {
 	CategoryCount int64                                     `json:"categoryCount"`
 }
 
-func (a *GetArticleArchive) Invoke(ctx *gin.Context, proxy proxy.Proxy) (interface{}, error) {
-	return a.GetArticleArchive(ctx, proxy)
-}
-
-// GetArticleArchive 文章归档
-func (a *GetArticleArchive) GetArticleArchive(ctx *gin.Context, proxy proxy.Proxy) (*GetArticleArchiveReply, error) {
+// GetArticleArchiveImpl 文章归档
+func (a *articleImpl) GetArticleArchiveImpl(ctx *gin.Context) (*GetArticleArchiveReply, error) {
 	rsp := &GetArticleArchiveReply{}
 	handler := make([]func() error, 0)
 	handler = append(handler, func() error {
-		articles, total, err := proxy.GetEsProxy().SearchArticleList(ctx, &model.SearchArticleParam{})
+		articles, total, err := a.GetElasticProxy().SearchArticleList(ctx, &model.SearchArticleParam{})
 		if err != nil {
 			return err
 		}
@@ -38,7 +33,7 @@ func (a *GetArticleArchive) GetArticleArchive(ctx *gin.Context, proxy proxy.Prox
 		return nil
 	})
 	handler = append(handler, func() error {
-		tags, err := proxy.GetGormProxy().GetTagList()
+		tags, err := a.GetGormProxy().GetTagList()
 		if err != nil {
 			return err
 		}
@@ -47,7 +42,7 @@ func (a *GetArticleArchive) GetArticleArchive(ctx *gin.Context, proxy proxy.Prox
 		return nil
 	})
 	handler = append(handler, func() error {
-		categoryList, err := proxy.GetGormProxy().GetCategoryList()
+		categoryList, err := a.GetGormProxy().GetCategoryList()
 		if err != nil {
 			return err
 		}

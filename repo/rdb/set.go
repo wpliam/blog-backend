@@ -25,3 +25,8 @@ func (cli *RedisClient) SIsMember(ctx context.Context, key string, member interf
 func (cli *RedisClient) SCard(ctx context.Context, key string) (int64, error) {
 	return cli.UniversalClient.SCard(ctx, key).Result()
 }
+
+// SMembers 获取set中所有的member
+func (cli *RedisClient) SMembers(ctx context.Context, key string) ([]string, error) {
+	return cli.UniversalClient.SMembers(ctx, key).Result()
+}

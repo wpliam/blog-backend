@@ -71,3 +71,36 @@ func (u *userImpl) GetUserInfo(ctx *gin.Context) (interface{}, error) {
 	}
 	return rsp, nil
 }
+
+// GetUserCollectList 获取用户收藏列表
+func (u *userImpl) GetUserCollectList(ctx *gin.Context) (interface{}, error) {
+	var req *GetUserCollectListReq
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		return nil, err
+	}
+	redisCli := u.GetRedisProxy()
+	members, err := redisCli.SMembers(ctx, util.GetUserCollectKey(req.Uid))
+	if err != nil {
+		return nil, err
+	}
+	if len(members) == 0 {
+		return nil, nil
+	}
+	ids := make([]int64, len(members))
+	for _, id := range members {
+		userID := util.ParseInt64(id)
+		if userID == 0 {
+			continue
+		}
+		ids = append(ids, userID)
+	}
+	esCli := u.GetElasticProxy()
+	articles, err := esCli.GetArticleList(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	rsp := &GetUserCollectListRsp{
+		Articles: articles,
+	}
+	return rsp, nil
+}

@@ -53,6 +53,8 @@ func (s *Server) initUserRouter(apiGroup *gin.RouterGroup) {
 	apiGroup.POST("refresh_token", s.wrapperHandler(u.RefreshToken))
 	apiGroup.GET("static_user_info/:uid", s.wrapperHandler(u.StaticUserInfo))
 	apiGroup.GET("get_user_info/:uid", s.wrapperHandler(u.GetUserInfo))
+
+	apiGroup.POST("get_user_collect_list", s.wrapperHandler(u.GetUserCollectList))
 }
 
 func (s *Server) initSharedRouter(apiGroup *gin.RouterGroup) {

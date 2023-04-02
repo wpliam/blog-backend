@@ -46,7 +46,6 @@ func NewServer(opts ...Option) *Server {
 // SIGALRM	14	Term	时钟定时信号
 // SIGTERM	15	Term	结束程序(可以被捕获、阻塞或忽略)
 func (s *Server) Run() {
-	gin.SetMode(gin.ReleaseMode)
 	if !s.DisableServerRouter {
 		s.initRouter()
 	}

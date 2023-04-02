@@ -1,8 +1,8 @@
 package jwtauth
 
 import (
+	"blog-backend/util"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -11,7 +11,9 @@ import (
 
 // JwtAuth jwt鉴权
 type JwtAuth struct {
-	*options
+	expired time.Duration
+	signKey interface{}
+	keyFunc jwt.Keyfunc
 }
 
 type CustomClaims struct {
@@ -32,7 +34,7 @@ func (j *JwtAuth) GenToken(ctx *gin.Context, uid int64) (string, error) {
 }
 
 func (j *JwtAuth) ParseClaims(ctx *gin.Context) (*CustomClaims, error) {
-	token, err := jwt.ParseWithClaims(j.GetToken(ctx), &CustomClaims{}, j.keyFunc)
+	token, err := jwt.ParseWithClaims(util.GetToken(ctx), &CustomClaims{}, j.keyFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -41,8 +43,4 @@ func (j *JwtAuth) ParseClaims(ctx *gin.Context) (*CustomClaims, error) {
 		return claims, nil
 	}
 	return nil, fmt.Errorf("access token invalid")
-}
-
-func (j *JwtAuth) GetToken(ctx *gin.Context) string {
-	return strings.TrimPrefix(ctx.GetHeader("Authorization"), "Bearer ")
 }

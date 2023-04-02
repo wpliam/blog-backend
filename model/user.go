@@ -1,5 +1,7 @@
 package model
 
+import "gorm.io/gorm"
+
 // User 用户表
 type User struct {
 	Model
@@ -11,6 +13,10 @@ type User struct {
 
 func (*User) TableName() string {
 	return UserTableName
+}
+
+func (u *User) FindAfter(db *gorm.DB) error {
+	return nil
 }
 
 // Account 账号信息

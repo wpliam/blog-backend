@@ -11,6 +11,7 @@ type SearchArticleReq struct {
 	Cid     int64       `json:"cid"`
 	TagID   int64       `json:"tagID"`
 	Order   int         `json:"order"`
+	Uid     int64       `json:"uid"`
 	Page    *model.Page `json:"page"`
 
 	SearchType int `json:"searchType"` // 0:搜索文章 1:搜索随机文章
@@ -57,6 +58,7 @@ func (a *articleImpl) SearchArticleParam(req *SearchArticleReq) *model.SearchArt
 		Cid:     req.Cid,
 		TagID:   req.TagID,
 		Order:   req.Order,
+		Uid:     req.Uid,
 		Page:    req.Page,
 	}
 }

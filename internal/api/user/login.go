@@ -2,6 +2,7 @@ package user
 
 import (
 	"blog-backend/constant"
+	"blog-backend/model"
 	"blog-backend/repo/auth/jwtauth"
 	"blog-backend/util"
 	"fmt"
@@ -16,13 +17,14 @@ type LoginReq struct {
 }
 
 type LoginReply struct {
-	Token string        `json:"token"`
-	User  *NeedUserInfo `json:"user"`
+	Token string      `json:"token"`
+	User  *model.User `json:"user"`
 }
 
 // LoginImpl 登录实现
 func (u *userImpl) LoginImpl(ctx *gin.Context, req *LoginReq) (*LoginReply, error) {
-	accountInfo, err := u.GetGormProxy().GetAccountInfo(req.Username)
+	dbCli := u.GetGormProxy()
+	accountInfo, err := dbCli.GetAccountInfo(req.Username)
 	if err != nil {
 		return nil, err
 	}
@@ -33,11 +35,10 @@ func (u *userImpl) LoginImpl(ctx *gin.Context, req *LoginReq) (*LoginReply, erro
 	if err != nil {
 		return nil, err
 	}
-	userInfo, err := u.StaticUserInfoImpl(ctx, accountInfo.ID)
+	userInfo, err := dbCli.GetUserInfo(accountInfo.ID)
 	if err != nil {
 		return nil, err
 	}
-	// 用2倍的过期时间,jwt判断过期了的话在这个时间内可以刷新token
 	if err = u.GetRedisProxy().Set(ctx, token, accountInfo.ID, constant.LoginValidTime*2); err != nil {
 		log.Errorf("Login redis set err:%v", err)
 	}

@@ -20,3 +20,8 @@ func (cli *RedisClient) SIsMember(ctx context.Context, key string, member interf
 	}
 	return result
 }
+
+// SCard 获取set长度
+func (cli *RedisClient) SCard(ctx context.Context, key string) (int64, error) {
+	return cli.UniversalClient.SCard(ctx, key).Result()
+}

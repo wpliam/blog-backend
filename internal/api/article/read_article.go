@@ -1,8 +1,11 @@
 package article
 
 import (
+	"blog-backend/constant"
 	"blog-backend/model"
+	"blog-backend/util"
 	"blog-backend/util/thread"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/wpliap/common-wrap/log"
 )
@@ -15,6 +18,8 @@ type ReadArticleReply struct {
 	Article struct {
 		*model.ArticleContentSummary
 		*model.ArticleContentInfo
+		IsLike    bool `json:"isLike"`
+		IsCollect bool `json:"isCollect"`
 	} `json:"article"`
 	Next      *model.Article                 `json:"next"`      // 下一篇文章
 	Prev      *model.Article                 `json:"prev"`      // 上一篇文章
@@ -27,16 +32,18 @@ type ReadArticleReply struct {
 func (a *articleImpl) ReadArticleImpl(ctx *gin.Context, articleID int64) (*ReadArticleReply, error) {
 	dbCli := a.GetGormProxy()
 	esCli := a.GetElasticProxy()
+	redisCli := a.GetRedisProxy()
 	summary, err := esCli.GetArticleInfo(ctx, articleID)
 	if err != nil {
 		return nil, err
 	}
 	rsp := &ReadArticleReply{}
+	articleContent := &model.ArticleContentInfo{}
 	rsp.Article.ArticleContentSummary = summary
 	handler := make([]func() error, 0)
 	handler = append(handler, func() error {
 		var err error
-		rsp.Article.ArticleContentInfo, err = dbCli.GetArticleContentInfo(articleID)
+		articleContent, err = dbCli.GetArticleContentInfo(articleID)
 		return err
 	})
 	handler = append(handler, func() error {
@@ -72,6 +79,25 @@ func (a *articleImpl) ReadArticleImpl(ctx *gin.Context, articleID int64) (*ReadA
 		log.Errorf("ReadArticle err:%v articleID:%s", err, articleID)
 		return nil, err
 	}
+	articleStrID := fmt.Sprintf("%d", articleID)
+	likeCount, err := redisCli.ZScore(ctx, constant.ArticleLikeCountKey, articleStrID)
+	if err == nil {
+		articleContent.LikeCount = int64(likeCount)
+	}
+	viewCount, err := redisCli.ZScore(ctx, constant.ArticleViewCountKey, articleStrID)
+	if err == nil {
+		articleContent.ViewCount = int64(viewCount)
+	}
+	collectCount, err := redisCli.HGet(ctx, constant.ArticleCollectCountKey, articleStrID)
+	if err == nil {
+		articleContent.CollectCount = collectCount
+	}
+	uid := util.GetUid(ctx)
+	if uid > 0 {
+		rsp.Article.IsLike = redisCli.SIsMember(ctx, util.GetUserLikeKey(uid), articleID)
+		rsp.Article.IsCollect = redisCli.SIsMember(ctx, util.GetUserCollectKey(uid), articleID)
+	}
+	rsp.Article.ArticleContentInfo = articleContent
 	return rsp, nil
 }
 

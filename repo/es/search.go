@@ -15,7 +15,10 @@ func (cli *ElasticClient) SearchArticleList(ctx context.Context, param *model.Se
 	searchService := cli.Search(constant.EsArticleIndex)
 	query := elastic.NewBoolQuery()
 	if param.Keyword != "" {
-		query.Filter(elastic.NewWildcardQuery("title", param.Keyword))
+		query.Must(elastic.NewWildcardQuery("title", param.Keyword))
+	}
+	if param.Uid > 0 {
+		query.Filter(elastic.NewTermQuery("uid", param.Uid))
 	}
 	if param.Cid > 0 {
 		query.Filter(elastic.NewTermQuery("cid", param.Cid))
@@ -62,28 +65,15 @@ func (cli *ElasticClient) GetArticleList(ctx context.Context, ids []int64) ([]*m
 	if len(ids) == 0 {
 		return nil, nil
 	}
-	var multi []*elastic.MultiGetItem
+	idStr := make([]string, 0, len(ids))
 	for _, id := range ids {
-		query := elastic.NewMultiGetItem().Index(constant.EsArticleIndex).Id(fmt.Sprintf("%d", id))
-		multi = append(multi, query)
+		idStr = append(idStr, fmt.Sprintf("%d", id))
 	}
-	resp, err := cli.MultiGet().Add(multi...).Do(ctx)
+	result, err := cli.Search(constant.EsArticleIndex).Query(elastic.NewIdsQuery().Ids(idStr...)).Size(len(ids)).Do(ctx)
 	if err != nil {
 		return nil, err
 	}
-	var contentSummary []*model.ArticleContentSummary
-	for _, doc := range resp.Docs {
-		content, err := doc.Source.MarshalJSON()
-		if err != nil {
-			continue
-		}
-		summary := &model.ArticleContentSummary{}
-		if err = json.Unmarshal(content, summary); err != nil {
-			continue
-		}
-		contentSummary = append(contentSummary, summary)
-	}
-	return contentSummary, nil
+	return convertArticleResult(result), nil
 }
 
 // AddArticleToEs 添加文章到es

@@ -11,6 +11,7 @@ type Option func(*Server)
 
 func defaultServerOption() *Server {
 	proxyService := proxy.NewProxyService()
+	gin.SetMode(gin.ReleaseMode)
 	return &Server{
 		router:              gin.Default(),
 		port:                8888,

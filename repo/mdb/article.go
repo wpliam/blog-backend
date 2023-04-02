@@ -31,7 +31,7 @@ func (cli *MysqlClient) GetArticleInfo(articleID int64) (*model.Article, error) 
 // GetNextArticle 获取下一篇文章
 func (cli *MysqlClient) GetNextArticle(articleID int64) (*model.Article, error) {
 	var article *model.Article
-	err := cli.Select("id", "title").First(&article, "id > ? and status = ?", articleID, 1).Error
+	err := cli.Select("id", "title", "user_id").First(&article, "id > ? and status = ?", articleID, 1).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil
 	}
@@ -44,7 +44,7 @@ func (cli *MysqlClient) GetNextArticle(articleID int64) (*model.Article, error) 
 // GetPrevArticle 获取上一篇文章
 func (cli *MysqlClient) GetPrevArticle(articleID int64) (*model.Article, error) {
 	var article *model.Article
-	err := cli.Select("id", "title").Last(&article, "id < ? and status = ?", articleID, 1).Error
+	err := cli.Select("id", "title", "user_id").Last(&article, "id < ? and status = ?", articleID, 1).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil
 	}

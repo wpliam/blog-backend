@@ -7,4 +7,5 @@ type UserService interface {
 	Logout(ctx *gin.Context) error
 	RefreshToken(ctx *gin.Context) (interface{}, error)
 	StaticUserInfo(ctx *gin.Context) (interface{}, error)
+	GetUserInfo(ctx *gin.Context) (interface{}, error)
 }

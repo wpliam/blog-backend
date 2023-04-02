@@ -1,62 +1,63 @@
 package user
 
 import (
+	"blog-backend/util"
 	"blog-backend/util/thread"
 	"github.com/gin-gonic/gin"
 	"github.com/wpliap/common-wrap/log"
 )
 
-type NeedUserInfo struct {
-	ID           int64  `json:"id"`           // 用户id
-	Avatar       string `json:"avatar"`       // 用户图像
-	Nickname     string `json:"nickname"`     // 用户昵称
-	Desc         string `json:"desc"`         // 用户描述
-	ArticleCount int64  `json:"articleCount"` // 用户发表了多少篇文章
-	CommentCount int64  `json:"commentCount"` // 用户发表了多少评论
-	HotCount     int64  `json:"hotCount"`     // 用户人气值
-	FansCount    int64  `json:"fansCount"`    // 用户有多少粉丝
-}
-
 type StaticUserInfoReply struct {
-	User *NeedUserInfo `json:"user"`
+	ArticleCount int64 `json:"articleCount"` // 用户发表了多少篇文章
+	CommentCount int64 `json:"commentCount"` // 用户发表了多少评论
+	HotCount     int64 `json:"hotCount"`     // 用户人气值
+
+	FansCount    int64 `json:"fansCount"`    // 用户有多少粉丝
+	CollectCount int64 `json:"collectCount"` // 用户收藏文章数
+	LikeCount    int64 `json:"likeCount"`    // 获得多少点赞
 }
 
 // StaticUserInfoImpl 统计用户信息
-func (u *userImpl) StaticUserInfoImpl(ctx *gin.Context, uid int64) (*NeedUserInfo, error) {
-	userInfo := &NeedUserInfo{
+func (u *userImpl) StaticUserInfoImpl(ctx *gin.Context, uid int64) (*StaticUserInfoReply, error) {
+	rsp := &StaticUserInfoReply{
 		FansCount: 10,
 	}
 	dbCli := u.GetGormProxy()
+	redisCli := u.GetRedisProxy()
 	handler := make([]func() error, 0)
 	handler = append(handler, func() error {
-		info, err := dbCli.GetUserInfo(uid)
-		if err != nil {
-			return err
-		}
-		userInfo.ID = info.ID
-		userInfo.Nickname = info.Nickname
-		userInfo.Avatar = info.Avatar
-		userInfo.Desc = info.Desc
-		return nil
-	})
-	handler = append(handler, func() error {
 		var err error
-		userInfo.CommentCount, err = dbCli.GetUserCommentCount(uid)
+		rsp.CommentCount, err = dbCli.GetUserCommentCount(uid)
 		return err
 	})
 	handler = append(handler, func() error {
 		var err error
-		userInfo.ArticleCount, err = dbCli.GetUserArticleCount(uid)
+		rsp.ArticleCount, err = dbCli.GetUserArticleCount(uid)
 		return err
 	})
 	handler = append(handler, func() error {
 		var err error
-		userInfo.HotCount, err = dbCli.GetUserViewCount(uid)
+		rsp.HotCount, err = dbCli.GetUserViewCount(uid)
+		return err
+	})
+	handler = append(handler, func() error {
+		var err error
+		rsp.LikeCount, err = redisCli.SCard(ctx, util.GetUserLikeKey(uid))
+		return err
+	})
+	handler = append(handler, func() error {
+		var err error
+		rsp.CollectCount, err = redisCli.SCard(ctx, util.GetUserCollectKey(uid))
+		return err
+	})
+	handler = append(handler, func() error {
+		var err error
+		rsp.FansCount, err = redisCli.SCard(ctx, util.GetUserFansKey(uid))
 		return err
 	})
 	if err := thread.GoAndWait(handler...); err != nil {
 		log.Errorf("StaticUserInfo GoAndWait err:%v uid:%d", err, uid)
 		return nil, err
 	}
-	return userInfo, nil
+	return rsp, nil
 }

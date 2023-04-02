@@ -7,6 +7,16 @@ const (
 )
 
 const (
+	EsArticleIndex = "blog_article_index"
+)
+
+const (
+	ArticleLikeCountKey    = "article_like_count"
+	ArticleViewCountKey    = "article_view_count"
+	ArticleCollectCountKey = "article_collect_count"
+)
+
+const (
 	MysqlDefaultTimeLayout string = "2006-01-02T15:04:05+08:00"
 	TimeStampLayout        string = "20060102150405"      // TimeStampLayout 查询时间的精度，目前是秒
 	NotifyLayout           string = "2006年01月02日15时04分"   // NotifyLayout 通知时间格式，目前是分钟
@@ -16,10 +26,6 @@ const (
 	MonthSubTableSuffix    string = "2006-01"             // MonthSubTableSuffix 按月分后缀格式
 	YearSubTableSuffix     string = "2006"                // YearSubTableSuffix 按年分后缀格式
 	TimeStampForDownload   string = "2006_01_02_15_04_05" // TimeStampForDownload 下载使用的时间格式
-)
-
-const (
-	EsArticleIndex = "blog_article_index"
 )
 
 const (

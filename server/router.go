@@ -13,7 +13,7 @@ import (
 
 // initRouter 服务路由初始化
 func (s *Server) initRouter() {
-	s.router.Use(s.middle.Options())
+	s.router.Use(s.middle.Options(), s.middle.SetUid())
 	apiGroup := s.router.Group("api")
 	s.initArticleRouter(apiGroup)
 	s.initBannerRouter(apiGroup)
@@ -50,13 +50,14 @@ func (s *Server) initUserRouter(apiGroup *gin.RouterGroup) {
 	u := user.NewUserService(s.proxy)
 	apiGroup.POST("login", s.wrapperHandler(u.Login))
 	apiGroup.POST("logout", s.wrapper(u.Logout))
-	apiGroup.POST("refresh_token", s.middle.Refresh(), s.wrapperHandler(u.RefreshToken))
+	apiGroup.POST("refresh_token", s.wrapperHandler(u.RefreshToken))
 	apiGroup.GET("static_user_info/:uid", s.wrapperHandler(u.StaticUserInfo))
+	apiGroup.GET("get_user_info/:uid", s.wrapperHandler(u.GetUserInfo))
 }
 
 func (s *Server) initSharedRouter(apiGroup *gin.RouterGroup) {
 	share := shared.NewSharedService(s.proxy)
-	apiGroup.POST("add_view_count", s.wrapperHandler(share.AddViewCount))
+	apiGroup.GET("add_view_count/:articleID", s.wrapper(share.AddViewCount))
 	loginAuthGroup := apiGroup.Use(s.middle.LoginAuth())
 	{
 		loginAuthGroup.POST("give_collect", s.wrapperHandler(share.GiveCollect))

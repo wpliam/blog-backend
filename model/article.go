@@ -79,5 +79,6 @@ type SearchArticleParam struct {
 	Cid     int64  `json:"cid"`
 	TagID   int64  `json:"tagID"`
 	Order   int    `json:"order"`
+	Uid     int64  `json:"uid"`
 	Page    *Page  `json:"page"`
 }

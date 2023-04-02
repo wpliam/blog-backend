@@ -26,7 +26,6 @@ func (middle *Middleware) LoginAuth() gin.HandlerFunc {
 			resp.ResponseUnauthorized(ctx, "登录已过期,请从新登录")
 			return
 		}
-		ctx.Set("uid", claims.Uid)
 		ctx.Next()
 	}
 }

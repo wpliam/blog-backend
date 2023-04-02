@@ -29,8 +29,8 @@ func (cli *RedisClient) Set(ctx context.Context, key string, value interface{}, 
 }
 
 // SetNX set if not exists
-func (cli *RedisClient) SetNX(ctx context.Context, key string, value interface{}, expr time.Duration) error {
-	return cli.UniversalClient.SetNX(ctx, key, value, expr).Err()
+func (cli *RedisClient) SetNX(ctx context.Context, key string, value interface{}, expr time.Duration) (bool, error) {
+	return cli.UniversalClient.SetNX(ctx, key, value, expr).Result()
 }
 
 // SetEX ...

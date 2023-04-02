@@ -2,6 +2,7 @@ package util
 
 import (
 	"github.com/gin-gonic/gin"
+	"strings"
 )
 
 // GetClientIP 获取请求ip
@@ -16,4 +17,14 @@ func GetClientIP(ctx *gin.Context) string {
 // GetUid 获取uid
 func GetUid(ctx *gin.Context) int64 {
 	return ctx.GetInt64("uid")
+}
+
+// GetArticleID 获取文章ID
+func GetArticleID(ctx *gin.Context) int64 {
+	return ParseInt64(ctx.Param("articleID"))
+}
+
+// GetToken 获取token
+func GetToken(ctx *gin.Context) string {
+	return strings.TrimPrefix(ctx.GetHeader("Authorization"), "Bearer ")
 }

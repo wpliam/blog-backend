@@ -5,11 +5,12 @@ import (
 	"blog-backend/util"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"github.com/wpliap/common-wrap/log"
 )
 
 type RefreshTokenReq struct {
-	Uid   int64  `json:"uid" binding:"gt=1"`
+	Uid   int64  `json:"uid"`
 	Token string `json:"token" binding:"required"`
 }
 
@@ -17,9 +18,13 @@ type RefreshTokenReply struct {
 	Token string `json:"token"`
 }
 
-// RefreshTokenImpl 中间件层有做redis的校验,这里只需要校验id与请求的id是否一致
+// RefreshTokenImpl ...
 func (u *userImpl) RefreshTokenImpl(ctx *gin.Context, req *RefreshTokenReq) (*RefreshTokenReply, error) {
-	uid := util.GetUid(ctx)
+	id, err := u.GetRedisProxy().Get(ctx, req.Token)
+	if err == redis.Nil {
+		return nil, fmt.Errorf("token not exist")
+	}
+	uid := util.ParseInt64(id)
 	if uid != req.Uid {
 		return nil, fmt.Errorf("id error")
 	}

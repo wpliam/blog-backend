@@ -6,6 +6,7 @@ import (
 	"blog-backend/util"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/wpliap/common-wrap/log"
 	"time"
 )
 
@@ -69,6 +70,7 @@ func (s *sharedImpl) GiveThumb(ctx *gin.Context) (interface{}, error) {
 		LikeCount: int64(likeCount),
 		IsLike:    isLike,
 	}
+	log.Infof("GiveThumb success uid:%d req:%+v", util.GetUid(ctx), req)
 	return rsp, nil
 }
 

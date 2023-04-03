@@ -27,9 +27,18 @@ func ResponseFail(ctx *gin.Context, err error) {
 	})
 }
 
+// ResponseUnauthorized 401未登录
 func ResponseUnauthorized(ctx *gin.Context, msg string) {
-	ctx.AbortWithStatusJSON(http.StatusOK, &Response{
+	ctx.AbortWithStatusJSON(http.StatusUnauthorized, &Response{
 		Code: http.StatusUnauthorized,
+		Msg:  msg,
+	})
+}
+
+// ResponseForbidden 403 鉴权失败
+func ResponseForbidden(ctx *gin.Context, msg string) {
+	ctx.AbortWithStatusJSON(http.StatusForbidden, &Response{
+		Code: http.StatusForbidden,
 		Msg:  msg,
 	})
 }

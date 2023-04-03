@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/olivere/elastic/v7"
 	"github.com/wpliap/common-wrap/log"
+	"unicode/utf8"
 )
 
 // SearchArticleList es搜索文章
@@ -15,7 +16,14 @@ func (cli *ElasticClient) SearchArticleList(ctx context.Context, param *model.Se
 	searchService := cli.Search(constant.EsArticleIndex)
 	query := elastic.NewBoolQuery()
 	if param.Keyword != "" {
-		query.Must(elastic.NewWildcardQuery("title", param.Keyword))
+		queryTitle := elastic.NewBoolQuery()
+		queryTitle.Should(elastic.NewTermQuery("title", param.Keyword)).Boost(10.0)
+		queryTitle.Should(elastic.NewMatchPhraseQuery("titleKeyword", param.Keyword).
+			Slop(utf8.RuneCountInString(param.Keyword)/10 + 1).Boost(5.0))
+		queryTitle.Should(elastic.NewMatchQuery("titleChar", param.Keyword).Operator("AND").
+			FuzzyTranspositions(false).PrefixLength(utf8.RuneCountInString(param.Keyword) / 3).
+			Boost(1.0))
+		query.Must(queryTitle)
 	}
 	if param.Uid > 0 {
 		query.Filter(elastic.NewTermQuery("uid", param.Uid))
@@ -35,6 +43,8 @@ func (cli *ElasticClient) SearchArticleList(ctx context.Context, param *model.Se
 	}
 	if param != nil && param.Page != nil {
 		searchService.From((param.Page.Offset - 1) * param.Page.Limit).Size(param.Page.Limit)
+	} else {
+		searchService.From(0).Size(10)
 	}
 	searchResult, err := searchService.Do(ctx)
 	if err != nil {

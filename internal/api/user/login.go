@@ -39,7 +39,7 @@ func (u *userImpl) LoginImpl(ctx *gin.Context, req *LoginReq) (*LoginReply, erro
 	if err != nil {
 		return nil, err
 	}
-	if err = u.GetRedisProxy().Set(ctx, token, accountInfo.ID, constant.LoginValidTime*2); err != nil {
+	if err = u.GetRedisProxy().Set(ctx, token, accountInfo.ID, constant.LoginRedisValidTime); err != nil {
 		log.Errorf("Login redis set err:%v", err)
 	}
 	go func() {

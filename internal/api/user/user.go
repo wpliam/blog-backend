@@ -1,9 +1,13 @@
 package user
 
 import (
+	"blog-backend/constant"
 	"blog-backend/internal/service"
+	"blog-backend/repo/auth/jwtauth"
 	"blog-backend/util"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"github.com/wpliap/common-wrap/log"
 )
 
@@ -41,7 +45,31 @@ func (u *userImpl) RefreshToken(ctx *gin.Context) (interface{}, error) {
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		return nil, err
 	}
-	return u.RefreshTokenImpl(ctx, req)
+	id, err := u.GetRedisProxy().Get(ctx, req.Token)
+	if err == redis.Nil {
+		return nil, fmt.Errorf("token not exist")
+	}
+	uid := util.ParseInt64(id)
+	if uid != req.Uid {
+		return nil, fmt.Errorf("id error")
+	}
+	token, err := jwtauth.DefaultJwtAuth.GenToken(ctx, uid)
+	if err != nil {
+		return nil, err
+	}
+	// 新token加入redis
+	if err = u.GetRedisProxy().Set(ctx, token, uid, constant.LoginRedisValidTime); err != nil {
+		return nil, err
+	}
+	// 将旧token删除
+	if err = u.GetRedisProxy().Del(ctx, req.Token); err != nil {
+		log.Errorf("RefreshToken del old token err:%v token:%v", err, token)
+	}
+	rsp := &RefreshTokenReply{
+		Token: token,
+	}
+	log.Infof("RefreshToken success req.token:%s token:", req.Token, token)
+	return rsp, nil
 }
 
 // StaticUserInfo 统计用户信息

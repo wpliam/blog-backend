@@ -3,7 +3,8 @@ package constant
 import "time"
 
 const (
-	LoginValidTime = 24 * time.Hour // 登录有效时间
+	LoginJwtValidTime   = 24 * time.Hour // 登录有效时间
+	LoginRedisValidTime = 2 * LoginJwtValidTime
 )
 
 const (

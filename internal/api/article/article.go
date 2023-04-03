@@ -3,6 +3,7 @@ package article
 import (
 	"blog-backend/internal/service"
 	"github.com/gin-gonic/gin"
+	"github.com/wpliap/common-wrap/log"
 	"strconv"
 )
 
@@ -20,6 +21,7 @@ type articleImpl struct {
 func (a *articleImpl) SearchArticleList(ctx *gin.Context) (interface{}, error) {
 	var req *SearchArticleReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
+		log.Errorf("SearchArticleList ShouldBindJSON err:%v", err)
 		return nil, err
 	}
 	switch req.SearchType {

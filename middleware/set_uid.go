@@ -10,9 +10,7 @@ import (
 func (middle *Middleware) SetUid() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		uid := middle.parseUid(ctx)
-		if uid > 0 {
-			ctx.Set("uid", uid)
-		}
+		ctx.Set("uid", uid)
 		ctx.Next()
 	}
 }

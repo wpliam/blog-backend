@@ -13,7 +13,7 @@ import (
 
 // initRouter 服务路由初始化
 func (s *Server) initRouter() {
-	s.router.Use(s.middle.Options(), s.middle.SetUid())
+	s.router.Use(s.middle.Options(), s.middle.SetUid(), s.middle.CheckSign())
 	apiGroup := s.router.Group("api")
 	s.initArticleRouter(apiGroup)
 	s.initBannerRouter(apiGroup)

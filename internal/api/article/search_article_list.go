@@ -26,6 +26,11 @@ type SearchArticleReply struct {
 // SearchArticleListImpl 搜索文章列表
 func (a *articleImpl) SearchArticleListImpl(ctx *gin.Context, req *SearchArticleReq) (*SearchArticleReply, error) {
 	param := a.SearchArticleParam(req)
+	if req.Keyword != "" {
+		if err := a.GetGormProxy().AddSearchFlow(req.Keyword); err != nil {
+			log.Errorf("SearchArticleListImpl AddSearchFlow err:%v", err)
+		}
+	}
 	articles, total, err := a.GetElasticProxy().SearchArticleList(ctx, param)
 	if err != nil {
 		log.Errorf("SearchArticle search err:%v param:%+v", err, param)

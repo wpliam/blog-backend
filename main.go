@@ -4,9 +4,8 @@ import (
 	"blog-backend/internal/proxy"
 	"blog-backend/server"
 	"context"
-	"github.com/wpliap/common-wrap/log"
-
 	_ "github.com/wpliap/common-wrap"
+	"github.com/wpliap/common-wrap/log"
 )
 
 func main() {
@@ -17,10 +16,10 @@ func main() {
 func rebuild() {
 	p := proxy.NewProxyService()
 	ctx := context.Background()
-	if err := p.GetElasticProxy().DeleteIndex(ctx); err != nil {
-		log.Errorf("DeleteIndex err:%v", err)
-		return
-	}
+	//if err := p.GetElasticProxy().DeleteIndex(ctx); err != nil {
+	//	log.Errorf("DeleteIndex err:%v", err)
+	//	return
+	//}
 	articles, err := p.GetGormProxy().GetAllArticle()
 	if err != nil {
 		log.Errorf("GetAllArticle err:%v", err)

@@ -16,5 +16,12 @@ type tagImpl struct {
 }
 
 func (t *tagImpl) GetTagList(ctx *gin.Context) (interface{}, error) {
-	return t.GetTagListImpl(ctx)
+	tag, err := t.GetGormProxy().GetTagList()
+	if err != nil {
+		return nil, err
+	}
+	rsp := &GetTagListReply{
+		Tags: tag,
+	}
+	return rsp, nil
 }

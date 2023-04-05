@@ -6,7 +6,7 @@ require (
 	github.com/gin-gonic/gin v1.9.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang-jwt/jwt/v4 v4.5.0
-	github.com/huandu/go-sqlbuilder v1.20.0
+	github.com/huandu/go-sqlbuilder v1.21.0
 	github.com/jlaffaye/ftp v0.1.0
 	github.com/olivere/elastic/v7 v7.0.32
 	github.com/wpliap/common-wrap v0.0.0-20230317131200-139479479700

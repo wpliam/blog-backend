@@ -39,7 +39,14 @@ func (a *articleImpl) GetArticleArchive(ctx *gin.Context) (interface{}, error) {
 
 // GetHotArticle 获取热门文章
 func (a *articleImpl) GetHotArticle(ctx *gin.Context) (interface{}, error) {
-	return a.GetHotArticleImpl(ctx)
+	articles, err := a.GetGormProxy().GetHotArticle()
+	if err != nil {
+		return nil, err
+	}
+	rsp := GetArticleReply{
+		Articles: articles,
+	}
+	return rsp, nil
 }
 
 // ReadArticle 读取文章
@@ -49,4 +56,20 @@ func (a *articleImpl) ReadArticle(ctx *gin.Context) (interface{}, error) {
 		return nil, err
 	}
 	return a.ReadArticleImpl(ctx, articleID)
+}
+
+// SearchKeywordFlow 搜索关键词流水
+func (a *articleImpl) SearchKeywordFlow(ctx *gin.Context) (interface{}, error) {
+	var req *SearchKeywordFlowReq
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		return nil, err
+	}
+	flows, err := a.GetGormProxy().GetSearchFlow(req.Keyword)
+	if err != nil {
+		return nil, err
+	}
+	rsp := SearchKeywordFlowReply{
+		Flows: flows,
+	}
+	return rsp, nil
 }

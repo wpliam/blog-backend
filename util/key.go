@@ -1,6 +1,10 @@
 package util
 
-import "fmt"
+import (
+	"blog-backend/constant"
+	"fmt"
+	"time"
+)
 
 // GetUserLikeKey 用户点赞集合的key
 func GetUserLikeKey(uid int64) string {
@@ -25,4 +29,9 @@ func GetUserFansKey(uid int64) string {
 // GetArticleIPKey 获取文章ip key
 func GetArticleIPKey(ip string, articleID int64) string {
 	return fmt.Sprintf("addr_%s_%d", ip, articleID)
+}
+
+// GetClockKey 用户签到key
+func GetClockKey(uid int64) string {
+	return fmt.Sprintf("%s:%d", time.Now().Format(constant.TimeStampMonthLayout), uid)
 }

@@ -22,6 +22,7 @@ const (
 	TimeStampLayout        string = "20060102150405"      // TimeStampLayout 查询时间的精度，目前是秒
 	NotifyLayout           string = "2006年01月02日15时04分"   // NotifyLayout 通知时间格式，目前是分钟
 	TimeStampDayLayout     string = "20060102"            // TimeStampDayLayout 格式化时间，目前是天
+	TimeStampMonthLayout   string = "200601"              // TimeStampMonthLayout 格式化时间,月
 	DayLayout              string = "2006年01月02日"         // DayLayout 时间格式话为天
 	TimeLayout             string = "2006-01-02 15:04:05" // TimeLayout
 	MonthSubTableSuffix    string = "2006-01"             // MonthSubTableSuffix 按月分后缀格式

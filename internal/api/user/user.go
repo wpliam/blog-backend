@@ -5,10 +5,12 @@ import (
 	"blog-backend/internal/service"
 	"blog-backend/repo/auth/jwtauth"
 	"blog-backend/util"
+	"blog-backend/util/thread"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 	"github.com/wpliap/common-wrap/log"
+	"time"
 )
 
 func NewUserService(proxyService service.ProxyService) service.UserService {
@@ -27,7 +29,38 @@ func (u *userImpl) Login(ctx *gin.Context) (interface{}, error) {
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		return nil, err
 	}
-	return u.LoginImpl(ctx, req)
+	dbCli := u.GetGormProxy()
+	accountInfo, err := dbCli.GetAccountInfo(req.Username)
+	if err != nil {
+		return nil, err
+	}
+	if req.Password != accountInfo.Password {
+		return nil, fmt.Errorf("账号或密码错误")
+	}
+	token, err := jwtauth.DefaultJwtAuth.GenToken(ctx, accountInfo.ID)
+	if err != nil {
+		return nil, err
+	}
+	userInfo, err := dbCli.GetUserInfo(accountInfo.ID)
+	if err != nil {
+		return nil, err
+	}
+	if err = u.GetRedisProxy().Set(ctx, token, accountInfo.ID, constant.LoginRedisValidTime); err != nil {
+		log.Errorf("Login redis set err:%v", err)
+	}
+	go func() {
+		field := make(map[string]interface{})
+		field["ip"] = util.GetClientIP(ctx)
+		field["last_login_time"] = time.Now().Format(constant.TimeLayout)
+		if err = u.GetGormProxy().UpdateUserInfo(accountInfo.ID, field); err != nil {
+			log.Errorf("Login UpdateUserInfo err:%v", err)
+		}
+	}()
+	rsp := &LoginReply{
+		Token: token,
+		User:  userInfo,
+	}
+	return rsp, nil
 }
 
 // Logout 退出
@@ -72,11 +105,45 @@ func (u *userImpl) RefreshToken(ctx *gin.Context) (interface{}, error) {
 	return rsp, nil
 }
 
-// StaticUserInfo 统计用户信息
-func (u *userImpl) StaticUserInfo(ctx *gin.Context) (interface{}, error) {
+// CensusUserInfo 统计用户信息
+func (u *userImpl) CensusUserInfo(ctx *gin.Context) (interface{}, error) {
 	uid := util.ParseInt64(ctx.Param("uid"))
-	rsp, err := u.StaticUserInfoImpl(ctx, uid)
-	if err != nil {
+	rsp := &CensusUserInfoReply{}
+	dbCli := u.GetGormProxy()
+	redisCli := u.GetRedisProxy()
+	handler := make([]func() error, 0)
+	handler = append(handler, func() error {
+		var err error
+		rsp.CommentCount, err = dbCli.GetUserCommentCount(uid)
+		return err
+	})
+	handler = append(handler, func() error {
+		var err error
+		rsp.ArticleCount, err = dbCli.GetUserArticleCount(uid)
+		return err
+	})
+	handler = append(handler, func() error {
+		var err error
+		rsp.HotCount, err = dbCli.GetUserViewCount(uid)
+		return err
+	})
+	handler = append(handler, func() error {
+		var err error
+		rsp.LikeCount, err = redisCli.SCard(ctx, util.GetUserLikeKey(uid))
+		return err
+	})
+	handler = append(handler, func() error {
+		var err error
+		rsp.CollectCount, err = redisCli.SCard(ctx, util.GetUserCollectKey(uid))
+		return err
+	})
+	handler = append(handler, func() error {
+		var err error
+		rsp.FansCount, err = redisCli.SCard(ctx, util.GetUserFansKey(uid))
+		return err
+	})
+	if err := thread.GoAndWait(handler...); err != nil {
+		log.Errorf("StaticUserInfo GoAndWait err:%v uid:%d", err, uid)
 		return nil, err
 	}
 	return rsp, nil
@@ -92,10 +159,15 @@ func (u *userImpl) GetUserInfo(ctx *gin.Context) (interface{}, error) {
 	rsp := &GetUserInfoReply{
 		User: userInfo,
 	}
+	redisCli := u.GetRedisProxy()
 	// 如果登录了,且不是获取用户自己的信息,查询一下关注关系
 	loginUid := util.GetUid(ctx)
 	if loginUid > 0 && uid != loginUid {
-		rsp.IsFollow = u.GetRedisProxy().SIsMember(ctx, util.GetUserFollowKey(loginUid), uid)
+		rsp.IsFollow = redisCli.SIsMember(ctx, util.GetUserFollowKey(loginUid), uid)
+	}
+	// 如果登录了,且查询的是自己的信息，获取一下签到信息
+	if loginUid > 0 && uid == loginUid {
+		rsp.IsClock = redisCli.GetBit(ctx, util.GetClockKey(uid), int64(time.Now().Local().Day()-1))
 	}
 	return rsp, nil
 }

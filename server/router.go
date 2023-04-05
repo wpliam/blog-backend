@@ -29,6 +29,7 @@ func (s *Server) initArticleRouter(apiGroup *gin.RouterGroup) {
 	apiGroup.GET("get_hot_article", s.wrapperHandler(a.GetHotArticle))
 	apiGroup.GET("read_article/:articleID", s.wrapperHandler(a.ReadArticle))
 	apiGroup.GET("get_article_archive", s.wrapperHandler(a.GetArticleArchive))
+	apiGroup.POST("search_keyword_flow", s.wrapperHandler(a.SearchKeywordFlow))
 }
 
 func (s *Server) initBannerRouter(apiGroup *gin.RouterGroup) {
@@ -51,7 +52,7 @@ func (s *Server) initUserRouter(apiGroup *gin.RouterGroup) {
 	apiGroup.POST("login", s.wrapperHandler(u.Login))
 	apiGroup.POST("logout", s.wrapper(u.Logout))
 	apiGroup.POST("refresh_token", s.wrapperHandler(u.RefreshToken))
-	apiGroup.GET("static_user_info/:uid", s.wrapperHandler(u.StaticUserInfo))
+	apiGroup.GET("census_user_info/:uid", s.wrapperHandler(u.CensusUserInfo))
 	apiGroup.GET("get_user_info/:uid", s.wrapperHandler(u.GetUserInfo))
 
 	apiGroup.POST("get_user_collect_list", s.wrapperHandler(u.GetUserCollectList))
@@ -65,6 +66,8 @@ func (s *Server) initSharedRouter(apiGroup *gin.RouterGroup) {
 		loginAuthGroup.POST("give_collect", s.wrapperHandler(share.GiveCollect))
 		loginAuthGroup.POST("give_thumb", s.wrapperHandler(share.GiveThumb))
 		loginAuthGroup.POST("give_follow", s.wrapperHandler(share.GiveFollow))
+		loginAuthGroup.GET("punch_clock", s.wrapper(share.PunchClock))
+		loginAuthGroup.POST("census_clock_info", s.wrapperHandler(share.CensusClockInfo))
 	}
 }
 

@@ -6,6 +6,7 @@ import (
 	"blog-backend/util"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"github.com/wpliap/common-wrap/log"
 	"time"
 )
@@ -94,7 +95,7 @@ func (s *sharedImpl) GiveFollow(ctx *gin.Context) (interface{}, error) {
 		_ = redisCli.SAdd(ctx, util.GetUserFansKey(req.AuthorID), uid)
 		isFollow = true
 	}
-	rsp := GiveFollowRsp{
+	rsp := GiveFollowReply{
 		IsFollow: isFollow,
 	}
 	return rsp, nil
@@ -134,6 +135,73 @@ func (s *sharedImpl) GiveCollect(ctx *gin.Context) (interface{}, error) {
 	rsp := &GiveCollectReply{
 		CollectCount: collectCount,
 		IsCollect:    isCollect,
+	}
+	return rsp, nil
+}
+
+// PunchClock 打卡
+func (s *sharedImpl) PunchClock(ctx *gin.Context) error {
+	uid := util.GetUid(ctx)
+	if uid <= 0 {
+		return fmt.Errorf("uid not exist")
+	}
+	if err := s.GetRedisProxy().SetBit(ctx, util.GetClockKey(uid), int64(time.Now().Local().Day()-1), 1); err != nil {
+		return err
+	}
+	return nil
+}
+
+// CensusClockInfo 统计用户签到信息
+func (s *sharedImpl) CensusClockInfo(ctx *gin.Context) (interface{}, error) {
+	var req *CensusClockInfoReq
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		return nil, err
+	}
+	redisCli := s.GetRedisProxy()
+	monthClockNum, err := redisCli.UniversalClient.BitCount(ctx, util.GetClockKey(req.Uid), &redis.BitCount{
+		Start: 0,
+		End:   -1,
+	}).Result()
+	if err != nil {
+		return nil, err
+	}
+	dayOfMonth := fmt.Sprintf("u%d", time.Now().Day())
+	result, err := redisCli.UniversalClient.BitField(ctx,
+		util.GetClockKey(req.Uid), "GET", dayOfMonth, 0).Result()
+	if err != nil {
+		return nil, err
+	}
+	var continuousClockNum int
+	if len(result) > 0 {
+		num := result[0]
+		for {
+			// 让这个数字与1做与运算,得到数字的最后一个bit位, 判断这个bit是否为0, 如果是0说明未签到,结束
+			if (num & 1) == 0 {
+				break
+			}
+			continuousClockNum++
+			// 把数字右移一位,继续下一个bit位
+			num = num >> 1
+		}
+	}
+	week := int(time.Now().Weekday())
+	day := time.Now().Local().Day() - 1
+	if week == 0 {
+		week = 7
+	}
+	currWeekDetail := make(map[int]bool)
+	for i := week; i > 0; i-- {
+		currWeekDetail[i] = redisCli.GetBit(ctx, util.GetClockKey(req.Uid), int64(day))
+		day--
+	}
+	var days = defaultWeek
+	for _, item := range days {
+		item.IsClock = currWeekDetail[item.ID]
+	}
+	rsp := &CensusClockInfoReply{
+		MonthClockNum:      int(monthClockNum),
+		ContinuousClockNum: continuousClockNum,
+		Days:               days,
 	}
 	return rsp, nil
 }

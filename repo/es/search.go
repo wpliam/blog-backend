@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"github.com/olivere/elastic/v7"
 	"github.com/wpliap/common-wrap/log"
-	"unicode/utf8"
 )
 
 // SearchArticleList es搜索文章
@@ -17,13 +16,19 @@ func (cli *ElasticClient) SearchArticleList(ctx context.Context, param *model.Se
 	query := elastic.NewBoolQuery()
 	if param.Keyword != "" {
 		queryTitle := elastic.NewBoolQuery()
-		queryTitle.Should(elastic.NewTermQuery("title", param.Keyword)).Boost(10.0)
-		queryTitle.Should(elastic.NewMatchPhraseQuery("titleKeyword", param.Keyword).
-			Slop(utf8.RuneCountInString(param.Keyword)/10 + 1).Boost(5.0))
-		queryTitle.Should(elastic.NewMatchQuery("titleChar", param.Keyword).Operator("AND").
-			FuzzyTranspositions(false).PrefixLength(utf8.RuneCountInString(param.Keyword) / 3).
-			Boost(1.0))
+		// "minimum_should_match": "3<-1 6<-2 10<50%"
+		// 当词长度>3时可以有一个模糊，>6时允许两个，超过10个则模糊一半
+		queryTitle.Should(elastic.NewMultiMatchQuery(param.Keyword, "title", "abstract").MinimumShouldMatch("3<-1 6<-2 10<50%"))
 		query.Must(queryTitle)
+		titleField := elastic.NewHighlighterField("title")
+		titleField.PreTags("<span style='color:#409eff'>")
+		titleField.PostTags("</span>")
+		abstractField := elastic.NewHighlighterField("abstract")
+		abstractField.PreTags("<span style='color:#409eff'>")
+		abstractField.PostTags("</span>")
+		highlight := elastic.NewHighlight()
+		highlight.Fields(titleField, abstractField)
+		searchService.Highlight(highlight)
 	}
 	if param.Uid > 0 {
 		query.Filter(elastic.NewTermQuery("uid", param.Uid))
@@ -34,7 +39,7 @@ func (cli *ElasticClient) SearchArticleList(ctx context.Context, param *model.Se
 	if param.TagID > 0 {
 		query.Filter(elastic.NewBoolQuery().Must(elastic.NewTermQuery("tagIDs", param.TagID)))
 	}
-	searchService.Query(query)
+
 	switch param.Order {
 	case constant.SearchNewCreateArticle:
 		searchService.Sort("createTime", false)
@@ -43,10 +48,9 @@ func (cli *ElasticClient) SearchArticleList(ctx context.Context, param *model.Se
 	}
 	if param != nil && param.Page != nil {
 		searchService.From((param.Page.Offset - 1) * param.Page.Limit).Size(param.Page.Limit)
-	} else {
-		searchService.From(0).Size(10)
 	}
-	searchResult, err := searchService.Do(ctx)
+
+	searchResult, err := searchService.Query(query).Do(ctx)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -176,6 +180,13 @@ func convertArticleResult(searchResult *elastic.SearchResult) []*model.ArticleCo
 		if err := json.Unmarshal(hit.Source, articleInfo); err != nil {
 			log.Errorf("SearchArticle Source err:%v", err)
 			continue
+		}
+		aa := hit.Highlight
+		if aa["title"] != nil {
+			articleInfo.Title = aa["title"][0]
+		}
+		if aa["abstract"] != nil {
+			articleInfo.Abstract = aa["abstract"][0]
 		}
 		articles = append(articles, articleInfo)
 	}

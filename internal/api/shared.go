@@ -1,13 +1,13 @@
-package shared
+package api
 
 import (
 	"blog-backend/constant"
 	"blog-backend/internal/service"
+	"blog-backend/model/jsonagree"
 	"blog-backend/util"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
-	"github.com/wpliap/common-wrap/log"
 	"time"
 )
 
@@ -38,7 +38,7 @@ func (s *sharedImpl) AddViewCount(ctx *gin.Context) error {
 
 // GiveThumb 点赞
 func (s *sharedImpl) GiveThumb(ctx *gin.Context) (interface{}, error) {
-	var req *GiveThumbReq
+	var req *jsonagree.GiveThumbReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		return nil, err
 	}
@@ -67,17 +67,16 @@ func (s *sharedImpl) GiveThumb(ctx *gin.Context) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	rsp := &GiveThumbReply{
+	rsp := &jsonagree.GiveThumbReply{
 		LikeCount: int64(likeCount),
 		IsLike:    isLike,
 	}
-	log.Infof("GiveThumb success uid:%d req:%+v", util.GetUid(ctx), req)
 	return rsp, nil
 }
 
 // GiveFollow 关注
 func (s *sharedImpl) GiveFollow(ctx *gin.Context) (interface{}, error) {
-	var req *GiveFollowReq
+	var req *jsonagree.GiveFollowReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		return nil, err
 	}
@@ -95,7 +94,7 @@ func (s *sharedImpl) GiveFollow(ctx *gin.Context) (interface{}, error) {
 		_ = redisCli.SAdd(ctx, util.GetUserFansKey(req.AuthorID), uid)
 		isFollow = true
 	}
-	rsp := GiveFollowReply{
+	rsp := &jsonagree.GiveFollowReply{
 		IsFollow: isFollow,
 	}
 	return rsp, nil
@@ -103,7 +102,7 @@ func (s *sharedImpl) GiveFollow(ctx *gin.Context) (interface{}, error) {
 
 // GiveCollect 收藏
 func (s *sharedImpl) GiveCollect(ctx *gin.Context) (interface{}, error) {
-	var req *GiveCollectReq
+	var req *jsonagree.GiveCollectReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		return nil, err
 	}
@@ -132,7 +131,7 @@ func (s *sharedImpl) GiveCollect(ctx *gin.Context) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	rsp := &GiveCollectReply{
+	rsp := &jsonagree.GiveCollectReply{
 		CollectCount: collectCount,
 		IsCollect:    isCollect,
 	}
@@ -153,7 +152,7 @@ func (s *sharedImpl) PunchClock(ctx *gin.Context) error {
 
 // CensusClockInfo 统计用户签到信息
 func (s *sharedImpl) CensusClockInfo(ctx *gin.Context) (interface{}, error) {
-	var req *CensusClockInfoReq
+	var req *jsonagree.CensusClockInfoReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		return nil, err
 	}
@@ -194,11 +193,61 @@ func (s *sharedImpl) CensusClockInfo(ctx *gin.Context) (interface{}, error) {
 		currWeekDetail[i] = redisCli.GetBit(ctx, util.GetClockKey(req.Uid), int64(day))
 		day--
 	}
-	var days = defaultWeek
+	var days = []*jsonagree.OneDay{
+		{
+			ID:         1,
+			Day:        "一",
+			Points:     10,
+			Experience: 10,
+			IsClock:    false,
+		},
+		{
+			ID:         2,
+			Day:        "二",
+			Points:     20,
+			Experience: 20,
+			IsClock:    false,
+		},
+		{
+			ID:         3,
+			Day:        "三",
+			Points:     30,
+			Experience: 30,
+			IsClock:    false,
+		},
+		{
+			ID:         4,
+			Day:        "四",
+			Points:     40,
+			Experience: 40,
+			IsClock:    false,
+		},
+		{
+			ID:         5,
+			Day:        "五",
+			Points:     50,
+			Experience: 50,
+			IsClock:    false,
+		},
+		{
+			ID:         6,
+			Day:        "六",
+			Points:     60,
+			Experience: 60,
+			IsClock:    false,
+		},
+		{
+			ID:         7,
+			Day:        "七",
+			Points:     70,
+			Experience: 70,
+			IsClock:    false,
+		},
+	}
 	for _, item := range days {
 		item.IsClock = currWeekDetail[item.ID]
 	}
-	rsp := &CensusClockInfoReply{
+	rsp := &jsonagree.CensusClockInfoReply{
 		MonthClockNum:      int(monthClockNum),
 		ContinuousClockNum: continuousClockNum,
 		Days:               days,

@@ -6,11 +6,6 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-var addSearchFlowSQL = `
-insert into t_search_flow('keyword','version','flag') values (?,1,1)
-on duplicate key update version = version+1,flag = 1
-`
-
 // AddSearchFlow 添加搜索的流水
 func (cli *MysqlClient) AddSearchFlow(keyword string) error {
 	flow := &model.SearchFlow{

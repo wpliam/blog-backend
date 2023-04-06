@@ -1,8 +1,6 @@
-package user
+package jsonagree
 
-import (
-	"blog-backend/model"
-)
+import "blog-backend/model"
 
 type LoginReq struct {
 	Username string `json:"username" binding:"required"`
@@ -12,6 +10,9 @@ type LoginReq struct {
 type LoginReply struct {
 	Token string      `json:"token"`
 	User  *model.User `json:"user"`
+}
+
+type GetUserInfoReq struct {
 }
 
 // GetUserInfoReply 获取用户信息
@@ -25,8 +26,11 @@ type GetUserCollectListReq struct {
 	Uid int64 `json:"uid" binding:"min=1"`
 }
 
-type GetUserCollectListRsp struct {
+type GetUserCollectListReply struct {
 	Articles []*model.ArticleContentSummary `json:"articles"`
+}
+
+type CensusUserInfoReq struct {
 }
 
 type CensusUserInfoReply struct {

@@ -1,8 +1,9 @@
-package user
+package api
 
 import (
 	"blog-backend/constant"
 	"blog-backend/internal/service"
+	"blog-backend/model/jsonagree"
 	"blog-backend/repo/auth/jwtauth"
 	"blog-backend/util"
 	"blog-backend/util/thread"
@@ -25,7 +26,7 @@ type userImpl struct {
 
 // Login 登录
 func (u *userImpl) Login(ctx *gin.Context) (interface{}, error) {
-	var req *LoginReq
+	var req *jsonagree.LoginReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		return nil, err
 	}
@@ -56,7 +57,7 @@ func (u *userImpl) Login(ctx *gin.Context) (interface{}, error) {
 			log.Errorf("Login UpdateUserInfo err:%v", err)
 		}
 	}()
-	rsp := &LoginReply{
+	rsp := &jsonagree.LoginReply{
 		Token: token,
 		User:  userInfo,
 	}
@@ -74,7 +75,7 @@ func (u *userImpl) Logout(ctx *gin.Context) error {
 
 // RefreshToken 刷新token
 func (u *userImpl) RefreshToken(ctx *gin.Context) (interface{}, error) {
-	var req *RefreshTokenReq
+	var req *jsonagree.RefreshTokenReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		return nil, err
 	}
@@ -98,7 +99,7 @@ func (u *userImpl) RefreshToken(ctx *gin.Context) (interface{}, error) {
 	if err = u.GetRedisProxy().Del(ctx, req.Token); err != nil {
 		log.Errorf("RefreshToken del old token err:%v token:%v", err, token)
 	}
-	rsp := &RefreshTokenReply{
+	rsp := &jsonagree.RefreshTokenReply{
 		Token: token,
 	}
 	log.Infof("RefreshToken success req.token:%s token:", req.Token, token)
@@ -108,7 +109,7 @@ func (u *userImpl) RefreshToken(ctx *gin.Context) (interface{}, error) {
 // CensusUserInfo 统计用户信息
 func (u *userImpl) CensusUserInfo(ctx *gin.Context) (interface{}, error) {
 	uid := util.ParseInt64(ctx.Param("uid"))
-	rsp := &CensusUserInfoReply{}
+	rsp := &jsonagree.CensusUserInfoReply{}
 	dbCli := u.GetGormProxy()
 	redisCli := u.GetRedisProxy()
 	handler := make([]func() error, 0)
@@ -156,7 +157,7 @@ func (u *userImpl) GetUserInfo(ctx *gin.Context) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	rsp := &GetUserInfoReply{
+	rsp := &jsonagree.GetUserInfoReply{
 		User: userInfo,
 	}
 	redisCli := u.GetRedisProxy()
@@ -174,7 +175,7 @@ func (u *userImpl) GetUserInfo(ctx *gin.Context) (interface{}, error) {
 
 // GetUserCollectList 获取用户收藏列表
 func (u *userImpl) GetUserCollectList(ctx *gin.Context) (interface{}, error) {
-	var req *GetUserCollectListReq
+	var req *jsonagree.GetUserCollectListReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		return nil, err
 	}
@@ -199,7 +200,7 @@ func (u *userImpl) GetUserCollectList(ctx *gin.Context) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	rsp := &GetUserCollectListRsp{
+	rsp := &jsonagree.GetUserCollectListReply{
 		Articles: articles,
 	}
 	return rsp, nil

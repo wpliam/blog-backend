@@ -1,7 +1,8 @@
-package tag
+package api
 
 import (
 	"blog-backend/internal/service"
+	"blog-backend/model/jsonagree"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,7 +21,7 @@ func (t *tagImpl) GetTagList(ctx *gin.Context) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	rsp := &GetTagListReply{
+	rsp := &jsonagree.GetTagListReply{
 		Tags: tag,
 	}
 	return rsp, nil

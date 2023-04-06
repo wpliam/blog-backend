@@ -2,7 +2,6 @@ package proxy
 
 import (
 	"github.com/go-redis/redis/v8"
-	"github.com/jlaffaye/ftp"
 	"github.com/olivere/elastic/v7"
 	"gorm.io/gorm"
 )
@@ -10,7 +9,6 @@ import (
 type proxy struct {
 	dbCli      *gorm.DB
 	redisCli   redis.UniversalClient
-	ftpCli     *ftp.ServerConn
 	elasticCli *elastic.Client
 }
 
@@ -25,12 +23,6 @@ func WithMysqlProxy(db *gorm.DB) Option {
 func WithRedisProxy(redisCli redis.UniversalClient) Option {
 	return func(p *proxy) {
 		p.redisCli = redisCli
-	}
-}
-
-func WithFtpProxy(ftpCli *ftp.ServerConn) Option {
-	return func(p *proxy) {
-		p.ftpCli = ftpCli
 	}
 }
 

@@ -121,3 +121,8 @@ func (cli *MysqlClient) GetUserViewCount(uid int64) (int64, error) {
 	}
 	return viewInfo.Count, nil
 }
+
+// AddArticle 添加文章
+func (cli *MysqlClient) AddArticle(article *model.Article) error {
+	return cli.Create(&article).Error
+}

@@ -3,6 +3,7 @@ package es
 import (
 	"blog-backend/constant"
 	"blog-backend/model"
+	"blog-backend/model/jsonagree"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -11,15 +12,20 @@ import (
 )
 
 // SearchArticleList es搜索文章
-func (cli *ElasticClient) SearchArticleList(ctx context.Context, param *model.SearchArticleParam) ([]*model.ArticleContentSummary, int64, error) {
+func (cli *ElasticClient) SearchArticleList(ctx context.Context, param *jsonagree.SearchArticleListReq) ([]*model.ArticleContentSummary, int64, error) {
 	searchService := cli.Search(constant.EsArticleIndex)
 	query := elastic.NewBoolQuery()
-	if param.Keyword != "" {
+	if param.Title != "" {
 		queryTitle := elastic.NewBoolQuery()
+		queryTitle.Should(elastic.NewWildcardQuery("title", param.Title).Boost(10.0))
+		query.Must(queryTitle)
+	}
+	if param.Keyword != "" {
+		queryKeyword := elastic.NewBoolQuery()
 		// "minimum_should_match": "3<-1 6<-2 10<50%"
 		// 当词长度>3时可以有一个模糊，>6时允许两个，超过10个则模糊一半
-		queryTitle.Should(elastic.NewMultiMatchQuery(param.Keyword, "title", "abstract").MinimumShouldMatch("3<-1 6<-2 10<50%"))
-		query.Must(queryTitle)
+		queryKeyword.Should(elastic.NewMultiMatchQuery(param.Keyword, "title", "abstract").MinimumShouldMatch("3<-1 6<-2 10<50%"))
+		query.Must(queryKeyword)
 		titleField := elastic.NewHighlighterField("title")
 		titleField.PreTags("<span style='color:#409eff'>")
 		titleField.PostTags("</span>")

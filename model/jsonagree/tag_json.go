@@ -1,4 +1,4 @@
-package tag
+package jsonagree
 
 import "blog-backend/model"
 

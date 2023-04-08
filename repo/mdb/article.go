@@ -5,22 +5,13 @@ import (
 	"gorm.io/gorm"
 )
 
-func (cli *MysqlClient) GetAllArticle() ([]*model.Article, error) {
-	var articles []*model.Article
-	if err := cli.Preload("Category").
-		Preload("User").
-		Find(&articles, "status = ?", 1).Error; err != nil {
-		return nil, err
-	}
-	return articles, nil
-}
-
 // GetArticleInfo 获取文章信息
 func (cli *MysqlClient) GetArticleInfo(articleID int64) (*model.Article, error) {
 	var article *model.Article
 	if err := cli.
 		Preload("Category").
-		Where("id = ? and status = ?", articleID, 1).
+		Preload("User").
+		Where("id = ?", articleID).
 		First(&article).
 		Error; err != nil {
 		return nil, err
@@ -125,4 +116,9 @@ func (cli *MysqlClient) GetUserViewCount(uid int64) (int64, error) {
 // AddArticle 添加文章
 func (cli *MysqlClient) AddArticle(article *model.Article) error {
 	return cli.Create(&article).Error
+}
+
+// UpdateArticleStatus 更新文章状态
+func (cli *MysqlClient) UpdateArticleStatus(article *model.Article) error {
+	return cli.Select("status").Updates(&article).Error
 }

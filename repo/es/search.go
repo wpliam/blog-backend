@@ -54,6 +54,8 @@ func (cli *ElasticClient) SearchArticleList(ctx context.Context, param *jsonagre
 	}
 	if param != nil && param.Page != nil {
 		searchService.From((param.Page.Offset - 1) * param.Page.Limit).Size(param.Page.Limit)
+	} else {
+		searchService.Size(10000)
 	}
 
 	searchResult, err := searchService.Query(query).Do(ctx)

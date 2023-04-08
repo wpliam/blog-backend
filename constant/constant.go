@@ -15,6 +15,7 @@ const (
 	ArticleLikeCountKey    = "article_like_count"
 	ArticleViewCountKey    = "article_view_count"
 	ArticleCollectCountKey = "article_collect_count"
+	CommentLikeCountKey    = "comment_like_count"
 )
 
 const (

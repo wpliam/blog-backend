@@ -151,6 +151,11 @@ func (a *articleImpl) ReadArticle(ctx *gin.Context) (interface{}, error) {
 		rsp.Prev, err = dbCli.GetPrevArticle(articleID)
 		return err
 	})
+	handler = append(handler, func() error {
+		var err error
+		rsp.Article.CommentCount, err = dbCli.GetArticleCommentCount(articleID)
+		return err
+	})
 	if len(summary.TagIDs) > 0 {
 		handler = append(handler, func() error {
 			var err error
@@ -165,11 +170,6 @@ func (a *articleImpl) ReadArticle(ctx *gin.Context) (interface{}, error) {
 			return err
 		})
 	}
-	handler = append(handler, func() error {
-		var err error
-		rsp.Comment, err = a.GetArticleComment(articleID)
-		return err
-	})
 	if err = thread.GoAndWait(handler...); err != nil {
 		log.Errorf("ReadArticle err:%v articleID:%s", err, articleID)
 		return nil, err
@@ -189,54 +189,11 @@ func (a *articleImpl) ReadArticle(ctx *gin.Context) (interface{}, error) {
 	}
 	uid := util.GetUid(ctx)
 	if uid > 0 {
-		rsp.Article.IsLike = redisCli.SIsMember(ctx, util.GetUserLikeKey(uid), articleID)
+		rsp.Article.IsLike = redisCli.SIsMember(ctx, util.GetUserArticleLikeKey(uid), articleID)
 		rsp.Article.IsCollect = redisCli.SIsMember(ctx, util.GetUserCollectKey(uid), articleID)
 	}
 	rsp.Article.ArticleContentInfo = articleContent
 	return rsp, nil
-}
-
-// GetArticleComment 获取文章的评论
-func (a *articleImpl) GetArticleComment(articleID int64) ([]*model.CommentContent, error) {
-	dbCli := a.GetGormProxy()
-	userIDs, err := dbCli.GetCommentUserIDs(articleID)
-	if err != nil {
-		return nil, err
-	}
-	userInfo, err := dbCli.BatchGetUserInfo(userIDs)
-	if err != nil {
-		return nil, err
-	}
-	commentList, err := dbCli.GetCommentInfo(articleID, 0)
-	if err != nil {
-		return nil, err
-	}
-	var list []*model.CommentContent
-	for _, root := range commentList {
-		subComment, err := dbCli.GetCommentInfo(articleID, root.ID)
-		if err != nil {
-			return nil, err
-		}
-		var subCommentList []*model.CommentContent
-		for _, sub := range subComment {
-			subCommentList = append(subCommentList, &model.CommentContent{
-				ID:         sub.ID,
-				CreateTime: sub.CreateTime,
-				Content:    sub.Content,
-				User:       userInfo[sub.UserID],
-				ReplyUser:  userInfo[sub.ReplyUserID],
-			})
-		}
-		info := &model.CommentContent{
-			ID:         root.ID,
-			CreateTime: root.CreateTime,
-			Content:    root.Content,
-			User:       userInfo[root.UserID],
-			SubComment: subCommentList,
-		}
-		list = append(list, info)
-	}
-	return list, nil
 }
 
 // SearchKeywordFlow 搜索关键词流水
@@ -305,4 +262,35 @@ func (a *articleImpl) getRecommends(list []*model.Article) []string {
 		recommends = append(recommends, fmt.Sprintf("%d", item.ID))
 	}
 	return recommends
+}
+
+// ArticleReview 文章审核
+func (a *articleImpl) ArticleReview(ctx *gin.Context) error {
+	// 超级管理员才有权限审核
+	// todo 后面到db拉取权限
+	//uid := util.GetUid(ctx)
+	//if uid != 1 {
+	//	return fmt.Errorf("没有审核权限")
+	//}
+	var req *jsonagree.ArticleReviewReq
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		return err
+	}
+	// 默认通过
+	dbCli := a.GetGormProxy()
+	articleInfo, err := dbCli.GetArticleInfo(req.ArticleID)
+	if err != nil {
+		return err
+	}
+	//if articleInfo.Status == 1 {
+	//	return fmt.Errorf("文章已是审核通过状态")
+	//}
+	articleInfo.Status = 1
+	if err = dbCli.UpdateArticleStatus(articleInfo); err != nil {
+		return err
+	}
+	if err = a.GetElasticProxy().AddArticleToEs(ctx, articleInfo.ArticleContentSummary()); err != nil {
+		return err
+	}
+	return nil
 }

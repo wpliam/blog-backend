@@ -13,22 +13,25 @@ func (s *Server) initRouter() {
 
 	apiGroup := s.router.Group("api")
 
-	upload := file.NewUploadService()
-	apiGroup.POST("upload", s.wrapperHandler(upload.Upload))
 	download := file.NewDownloadService()
 	apiGroup.GET("download/:filepath", download.Download)
-
-	apiGroup.Use(s.middle.SetUid(), s.middle.CheckSign())
+	// s.middle.CheckSign()
+	apiGroup.Use(s.middle.SetUid())
 	s.initArticleRouter(apiGroup)
 	s.initBannerRouter(apiGroup)
 	s.initCategoryRouter(apiGroup)
 	s.initTagRouter(apiGroup)
 	s.initUserRouter(apiGroup)
 	s.initSharedRouter(apiGroup)
+	s.initCommentRouter(apiGroup)
+	upload := file.NewUploadService()
+	apiGroup.POST("upload", s.wrapperHandler(upload.Upload))
 }
 
 func (s *Server) initArticleRouter(apiGroup *gin.RouterGroup) {
 	a := api.NewArticleService(s.proxy)
+	apiGroup.POST("article_review", s.wrapper(a.ArticleReview))
+
 	apiGroup.POST("search_article_list", s.wrapperHandler(a.SearchArticleList))
 	apiGroup.GET("get_hot_article", s.wrapperHandler(a.GetHotArticle))
 	apiGroup.GET("read_article/:articleID", s.wrapperHandler(a.ReadArticle))
@@ -74,6 +77,12 @@ func (s *Server) initSharedRouter(apiGroup *gin.RouterGroup) {
 	apiGroup.POST("give_follow", s.middle.LoginAuth(), s.wrapperHandler(share.GiveFollow))
 	apiGroup.GET("punch_clock", s.middle.LoginAuth(), s.wrapper(share.PunchClock))
 	apiGroup.POST("census_clock_info", s.middle.LoginAuth(), s.wrapperHandler(share.CensusClockInfo))
+}
+
+func (s *Server) initCommentRouter(apiGroup *gin.RouterGroup) {
+	comment := api.NewCommentService(s.proxy)
+	apiGroup.POST("get_comment", s.wrapperHandler(comment.GetComment))
+	apiGroup.POST("add_comment", s.middle.LoginAuth(), s.wrapper(comment.AddComment))
 }
 
 type wrapper func(ctx *gin.Context) error

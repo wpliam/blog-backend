@@ -17,5 +17,8 @@ func NewFtpProxy() (*ftp.ServerConn, error) {
 	if err = conn.Login(cfg.GetUsername(), cfg.GetPassword()); err != nil {
 		return nil, err
 	}
+	//if err = conn.Quit(); err != nil {
+	//	return nil, err
+	//}
 	return conn, nil
 }

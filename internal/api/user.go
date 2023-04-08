@@ -130,7 +130,7 @@ func (u *userImpl) CensusUserInfo(ctx *gin.Context) (interface{}, error) {
 	})
 	handler = append(handler, func() error {
 		var err error
-		rsp.LikeCount, err = redisCli.SCard(ctx, util.GetUserLikeKey(uid))
+		rsp.LikeCount, err = redisCli.SCard(ctx, util.GetUserArticleLikeKey(uid))
 		return err
 	})
 	handler = append(handler, func() error {

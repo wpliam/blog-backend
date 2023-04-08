@@ -6,9 +6,14 @@ import (
 	"time"
 )
 
-// GetUserLikeKey 用户点赞集合的key
-func GetUserLikeKey(uid int64) string {
-	return fmt.Sprintf("user_like_%d", uid)
+// GetUserArticleLikeKey 用户点赞文章集合的key
+func GetUserArticleLikeKey(uid int64) string {
+	return fmt.Sprintf("user_article_like_%d", uid)
+}
+
+// GetUserCommentLikeKey 用户点赞评论集合的key
+func GetUserCommentLikeKey(uid int64) string {
+	return fmt.Sprintf("user_comment_like_%d", uid)
 }
 
 // GetUserCollectKey 用户收藏集合的key

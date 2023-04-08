@@ -40,7 +40,6 @@ type OneDay struct {
 
 // CensusClockInfoReply 统计签到详情
 type CensusClockInfoReply struct {
-	MonthClockNum      int       `json:"monthClockNum"`      // 本月打卡次数
-	ContinuousClockNum int       `json:"continuousClockNum"` // 当月连续打卡天数
-	Days               []*OneDay `json:"days"`
+	MonthClockNum      int `json:"monthClockNum"`      // 本月打卡次数
+	ContinuousClockNum int `json:"continuousClockNum"` // 当月连续打卡天数
 }

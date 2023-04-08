@@ -43,7 +43,13 @@ func (s *sharedImpl) GiveThumb(ctx *gin.Context) (interface{}, error) {
 		return nil, err
 	}
 	redisCli := s.GetRedisProxy()
-	userKey := util.GetUserLikeKey(util.GetUid(ctx))
+	userKey := util.GetUserArticleLikeKey(util.GetUid(ctx))
+	likeCountKey := constant.ArticleLikeCountKey
+	// 给评论点赞
+	if req.LikeType == 1 {
+		userKey = util.GetUserCommentLikeKey(util.GetUid(ctx))
+		likeCountKey = constant.CommentLikeCountKey
+	}
 	// 文章是否在用户的点赞列表
 	isMember := redisCli.SIsMember(ctx, userKey, req.ID)
 	var err error
@@ -58,12 +64,12 @@ func (s *sharedImpl) GiveThumb(ctx *gin.Context) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	articleKey := fmt.Sprintf("%d", req.ID)
+	idKey := fmt.Sprintf("%d", req.ID)
 	incr := -1
 	if isLike {
 		incr = 1
 	}
-	likeCount, err := redisCli.ZIncrBy(ctx, constant.ArticleLikeCountKey, articleKey, float64(incr))
+	likeCount, err := redisCli.ZIncrBy(ctx, likeCountKey, idKey, float64(incr))
 	if err != nil {
 		return nil, err
 	}
@@ -183,74 +189,9 @@ func (s *sharedImpl) CensusClockInfo(ctx *gin.Context) (interface{}, error) {
 			num = num >> 1
 		}
 	}
-	week := int(time.Now().Weekday())
-	day := time.Now().Local().Day() - 1
-	if week == 0 {
-		week = 7
-	}
-	currWeekDetail := make(map[int]bool)
-	for i := week; i > 0; i-- {
-		currWeekDetail[i] = redisCli.GetBit(ctx, util.GetClockKey(req.Uid), int64(day))
-		day--
-	}
-	var days = []*jsonagree.OneDay{
-		{
-			ID:         1,
-			Day:        "一",
-			Points:     10,
-			Experience: 10,
-			IsClock:    false,
-		},
-		{
-			ID:         2,
-			Day:        "二",
-			Points:     20,
-			Experience: 20,
-			IsClock:    false,
-		},
-		{
-			ID:         3,
-			Day:        "三",
-			Points:     30,
-			Experience: 30,
-			IsClock:    false,
-		},
-		{
-			ID:         4,
-			Day:        "四",
-			Points:     40,
-			Experience: 40,
-			IsClock:    false,
-		},
-		{
-			ID:         5,
-			Day:        "五",
-			Points:     50,
-			Experience: 50,
-			IsClock:    false,
-		},
-		{
-			ID:         6,
-			Day:        "六",
-			Points:     60,
-			Experience: 60,
-			IsClock:    false,
-		},
-		{
-			ID:         7,
-			Day:        "七",
-			Points:     70,
-			Experience: 70,
-			IsClock:    false,
-		},
-	}
-	for _, item := range days {
-		item.IsClock = currWeekDetail[item.ID]
-	}
 	rsp := &jsonagree.CensusClockInfoReply{
 		MonthClockNum:      int(monthClockNum),
 		ContinuousClockNum: continuousClockNum,
-		Days:               days,
 	}
 	return rsp, nil
 }

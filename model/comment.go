@@ -27,10 +27,14 @@ func (c *Comment) AfterFind(db *gorm.DB) error {
 }
 
 type CommentContent struct {
-	ID         int64             `json:"id"`
-	CreateTime time.Time         `json:"createTime"`
-	Content    string            `json:"content"`
-	User       *User             `json:"user"`
-	ReplyUser  *User             `json:"replyUser"`
+	ID         int64     `json:"id"`
+	CreateTime time.Time `json:"createTime"`
+	Content    string    `json:"content"`
+	User       *User     `json:"user"`
+	ReplyUser  *User     `json:"replyUser"`
+
+	IsLike bool  `json:"isLike"`
+	Likes  int64 `json:"likes"`
+
 	SubComment []*CommentContent `json:"subComment"`
 }

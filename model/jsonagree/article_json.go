@@ -25,14 +25,14 @@ type ReadArticleReply struct {
 	Article struct {
 		*model.ArticleContentSummary
 		*model.ArticleContentInfo
-		IsLike    bool `json:"isLike"`
-		IsCollect bool `json:"isCollect"`
+		IsLike       bool  `json:"isLike"`
+		IsCollect    bool  `json:"isCollect"`
+		CommentCount int64 `json:"commentCount"`
 	} `json:"article"`
 	Next      *model.Article                 `json:"next"`      // 下一篇文章
 	Prev      *model.Article                 `json:"prev"`      // 上一篇文章
 	Tags      []*model.Tag                   `json:"tags"`      // 文章标签
 	Recommend []*model.ArticleContentSummary `json:"recommend"` // 文件推荐
-	Comment   []*model.CommentContent        `json:"comment"`   // 文章评论
 }
 
 type SearchArticleListReq struct {
@@ -74,4 +74,12 @@ type WriteArticleReq struct {
 	Recommends  []*model.Article `json:"recommends"`
 	Cid         int64            `json:"cid" binding:"min=1"`
 	ArticleType uint32           `json:"articleType"`
+}
+
+type ArticleReviewReq struct {
+	ArticleID int64 `json:"articleID"`
+	Pass      int64 `json:"pass"` // 0:不通过 1:通过
+}
+
+type ArticleReviewRsp struct {
 }

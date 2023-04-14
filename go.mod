@@ -9,7 +9,7 @@ require (
 	github.com/huandu/go-sqlbuilder v1.21.0
 	github.com/jlaffaye/ftp v0.1.0
 	github.com/olivere/elastic/v7 v7.0.32
-	github.com/wpliap/common-wrap v0.0.0-20230317131200-139479479700
+	github.com/wpliap/common-wrap v0.0.0-20230414133602-d625be58b5be
 	gorm.io/gorm v1.24.6
 )
 

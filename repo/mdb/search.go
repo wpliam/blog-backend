@@ -13,7 +13,7 @@ func (cli *MysqlClient) AddSearchFlow(keyword string) error {
 		Version: 1,
 		Flag:    1,
 	}
-	if err := cli.Clauses(clause.OnConflict{
+	if err := cli.cli.Clauses(clause.OnConflict{
 		Columns: []clause.Column{{Name: "keyword"}},
 		DoUpdates: clause.Assignments(map[string]interface{}{
 			"version": gorm.Expr("version +1"),
@@ -27,7 +27,7 @@ func (cli *MysqlClient) AddSearchFlow(keyword string) error {
 
 func (cli *MysqlClient) GetSearchFlow(keyword string) ([]*model.SearchFlow, error) {
 	var flows []*model.SearchFlow
-	if err := cli.Scopes(func(db *gorm.DB) *gorm.DB {
+	if err := cli.cli.Scopes(func(db *gorm.DB) *gorm.DB {
 		if (keyword) == "" {
 			return db
 		}

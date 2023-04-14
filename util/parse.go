@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"github.com/wpliap/common-wrap/log"
 	"strconv"
 	"strings"
@@ -26,4 +27,12 @@ func ParseArrInt64(str string) []int64 {
 		ids = append(ids, id)
 	}
 	return ids
+}
+
+func Int64ToArrStr(ids []int64) []string {
+	var result []string
+	for _, id := range ids {
+		result = append(result, fmt.Sprintf("%d", id))
+	}
+	return result
 }

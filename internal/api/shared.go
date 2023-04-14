@@ -7,7 +7,6 @@ import (
 	"blog-backend/util"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v8"
 	"time"
 )
 
@@ -163,16 +162,11 @@ func (s *sharedImpl) CensusClockInfo(ctx *gin.Context) (interface{}, error) {
 		return nil, err
 	}
 	redisCli := s.GetRedisProxy()
-	monthClockNum, err := redisCli.UniversalClient.BitCount(ctx, util.GetClockKey(req.Uid), &redis.BitCount{
-		Start: 0,
-		End:   -1,
-	}).Result()
+	monthClockNum, err := redisCli.BitCount(ctx, util.GetClockKey(req.Uid))
 	if err != nil {
 		return nil, err
 	}
-	dayOfMonth := fmt.Sprintf("u%d", time.Now().Day())
-	result, err := redisCli.UniversalClient.BitField(ctx,
-		util.GetClockKey(req.Uid), "GET", dayOfMonth, 0).Result()
+	result, err := redisCli.BitGetDay(ctx, util.GetClockKey(req.Uid))
 	if err != nil {
 		return nil, err
 	}

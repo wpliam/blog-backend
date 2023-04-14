@@ -12,7 +12,7 @@ func (cli *MysqlClient) GetTagList(ids ...int64) ([]*model.Tag, error) {
 	if len(ids) > 0 {
 		where["id"] = ids
 	}
-	if err := cli.Where(where).Find(&tags).Error; err != nil {
+	if err := cli.cli.Where(where).Find(&tags).Error; err != nil {
 		return nil, err
 	}
 	return tags, nil
@@ -20,5 +20,5 @@ func (cli *MysqlClient) GetTagList(ids ...int64) ([]*model.Tag, error) {
 
 // FirstOrCreateTag tag_name存在查询记录,不存在则创建记录
 func (cli *MysqlClient) FirstOrCreateTag(tag *model.Tag) error {
-	return cli.Where(&model.Tag{TagName: tag.TagName}).FirstOrCreate(&tag).Error
+	return cli.cli.Where(&model.Tag{TagName: tag.TagName}).FirstOrCreate(&tag).Error
 }

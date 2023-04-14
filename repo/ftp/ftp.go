@@ -1,20 +1,19 @@
 package ftp
 
 import (
-	"fmt"
-	"github.com/jlaffaye/ftp"
-	"github.com/wpliap/common-wrap/config"
 	"time"
+
+	"blog-backend/repo/config"
+	"github.com/jlaffaye/ftp"
 )
 
 func NewFtpProxy() (*ftp.ServerConn, error) {
-	cfg := config.GetConnConf("blog.ftp")
-	addr := fmt.Sprintf("%s:%d", cfg.GetHost(), cfg.GetPort())
-	conn, err := ftp.Dial(addr, ftp.DialWithTimeout(time.Duration(cfg.GetTimeout())*time.Millisecond))
+	conf := config.GetFtpConf()
+	conn, err := ftp.Dial(conf.Addr, ftp.DialWithTimeout(2000*time.Millisecond))
 	if err != nil {
 		return nil, err
 	}
-	if err = conn.Login(cfg.GetUsername(), cfg.GetPassword()); err != nil {
+	if err = conn.Login(conf.Username, conf.Password); err != nil {
 		return nil, err
 	}
 	//if err = conn.Quit(); err != nil {

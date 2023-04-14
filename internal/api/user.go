@@ -3,6 +3,7 @@ package api
 import (
 	"blog-backend/constant"
 	"blog-backend/internal/service"
+	"blog-backend/model"
 	"blog-backend/model/jsonagree"
 	"blog-backend/repo/auth/jwtauth"
 	"blog-backend/util"
@@ -112,6 +113,7 @@ func (u *userImpl) CensusUserInfo(ctx *gin.Context) (interface{}, error) {
 	rsp := &jsonagree.CensusUserInfoReply{}
 	dbCli := u.GetGormProxy()
 	redisCli := u.GetRedisProxy()
+	esCli := u.GetElasticProxy()
 	handler := make([]func() error, 0)
 	handler = append(handler, func() error {
 		var err error
@@ -119,14 +121,13 @@ func (u *userImpl) CensusUserInfo(ctx *gin.Context) (interface{}, error) {
 		return err
 	})
 	handler = append(handler, func() error {
-		var err error
-		rsp.ArticleCount, err = dbCli.GetUserArticleCount(uid)
-		return err
-	})
-	handler = append(handler, func() error {
-		var err error
-		rsp.HotCount, err = dbCli.GetUserViewCount(uid)
-		return err
+		articles, count, err := esCli.SearchArticleList(ctx, &jsonagree.SearchArticleListReq{Uid: uid})
+		if err != nil {
+			return err
+		}
+		rsp.ArticleCount = count
+		rsp.HotCount = u.getUserViewCount(ctx, articles)
+		return nil
 	})
 	handler = append(handler, func() error {
 		var err error
@@ -148,6 +149,22 @@ func (u *userImpl) CensusUserInfo(ctx *gin.Context) (interface{}, error) {
 		return nil, err
 	}
 	return rsp, nil
+}
+
+func (u *userImpl) getUserViewCount(ctx *gin.Context, articles []*model.ArticleContentSummary) int64 {
+	var ids []int64
+	for _, item := range articles {
+		ids = append(ids, item.ID)
+	}
+	scores, err := u.GetRedisProxy().ZMScore(ctx, constant.ArticleViewCountKey, util.Int64ToArrStr(ids)...)
+	if err != nil {
+		return 0
+	}
+	var count int64
+	for _, i := range scores {
+		count += int64(i)
+	}
+	return count
 }
 
 // GetUserInfo 获取用户信息

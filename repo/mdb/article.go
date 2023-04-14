@@ -8,7 +8,7 @@ import (
 // GetArticleInfo 获取文章信息
 func (cli *MysqlClient) GetArticleInfo(articleID int64) (*model.Article, error) {
 	var article *model.Article
-	if err := cli.
+	if err := cli.cli.
 		Preload("Category").
 		Preload("User").
 		Where("id = ?", articleID).
@@ -22,7 +22,7 @@ func (cli *MysqlClient) GetArticleInfo(articleID int64) (*model.Article, error) 
 // GetNextArticle 获取下一篇文章
 func (cli *MysqlClient) GetNextArticle(articleID int64) (*model.Article, error) {
 	var article *model.Article
-	err := cli.Select("id", "title", "user_id").First(&article, "id > ? and status = ?", articleID, 1).Error
+	err := cli.cli.Select("id", "title", "user_id").First(&article, "id > ? and status = ?", articleID, 1).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil
 	}
@@ -35,7 +35,7 @@ func (cli *MysqlClient) GetNextArticle(articleID int64) (*model.Article, error) 
 // GetPrevArticle 获取上一篇文章
 func (cli *MysqlClient) GetPrevArticle(articleID int64) (*model.Article, error) {
 	var article *model.Article
-	err := cli.Select("id", "title", "user_id").Last(&article, "id < ? and status = ?", articleID, 1).Error
+	err := cli.cli.Select("id", "title", "user_id").Last(&article, "id < ? and status = ?", articleID, 1).Error
 	if err == gorm.ErrRecordNotFound {
 		return nil, nil
 	}
@@ -48,7 +48,7 @@ func (cli *MysqlClient) GetPrevArticle(articleID int64) (*model.Article, error) 
 // GetArticleContentInfo 获取文章内容信息
 func (cli *MysqlClient) GetArticleContentInfo(articleID int64) (*model.ArticleContentInfo, error) {
 	var content *model.ArticleContentInfo
-	if err := cli.Scopes(filterStatus()).First(&content, "id = ?", articleID).Error; err != nil {
+	if err := cli.cli.Scopes(filterStatus()).First(&content, "id = ?", articleID).Error; err != nil {
 		return nil, err
 	}
 	return content, nil
@@ -57,7 +57,7 @@ func (cli *MysqlClient) GetArticleContentInfo(articleID int64) (*model.ArticleCo
 // GetCategoryCard 获取分类卡片
 func (cli *MysqlClient) GetCategoryCard() ([]*model.CategoryCard, error) {
 	var cards []*model.CategoryCard
-	if err := cli.Model(&model.Article{}).
+	if err := cli.cli.Model(&model.Article{}).
 		Select("category_id", "sum(view_count) as view_count").
 		Scopes(filterStatus()).
 		Group("category_id").
@@ -73,7 +73,7 @@ func (cli *MysqlClient) GetCategoryCard() ([]*model.CategoryCard, error) {
 // GetHotArticle 获取热门文章
 func (cli *MysqlClient) GetHotArticle() ([]*model.Article, error) {
 	var articles []*model.Article
-	if err := cli.Preload("User").
+	if err := cli.cli.Preload("User").
 		Scopes(filterStatus()).
 		Order("view_count desc").
 		Limit(5).
@@ -84,41 +84,12 @@ func (cli *MysqlClient) GetHotArticle() ([]*model.Article, error) {
 	return articles, nil
 }
 
-// GetUserArticleCount 获取用户文章数
-func (cli *MysqlClient) GetUserArticleCount(uid int64) (int64, error) {
-	var count int64
-	if err := cli.
-		Model(&model.Article{}).
-		Where("user_id = ? and status = ?", uid, 1).
-		Count(&count).
-		Error; err != nil {
-		return 0, err
-	}
-	return count, nil
-}
-
-// GetUserViewCount 获取用户文章总浏览量
-func (cli *MysqlClient) GetUserViewCount(uid int64) (int64, error) {
-	viewInfo := struct {
-		Count int64 `json:"count"`
-	}{}
-	if err := cli.
-		Model(&model.Article{}).
-		Select("sum(view_count) as count").
-		Where("user_id = ? and status = ?", uid, 1).
-		Scan(&viewInfo).
-		Error; err != nil {
-		return 0, err
-	}
-	return viewInfo.Count, nil
-}
-
 // AddArticle 添加文章
 func (cli *MysqlClient) AddArticle(article *model.Article) error {
-	return cli.Create(&article).Error
+	return cli.cli.Create(&article).Error
 }
 
 // UpdateArticleStatus 更新文章状态
 func (cli *MysqlClient) UpdateArticleStatus(article *model.Article) error {
-	return cli.Select("status").Updates(&article).Error
+	return cli.cli.Select("status").Updates(&article).Error
 }

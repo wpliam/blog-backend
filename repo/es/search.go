@@ -13,7 +13,7 @@ import (
 
 // SearchArticleList es搜索文章
 func (cli *ElasticClient) SearchArticleList(ctx context.Context, param *jsonagree.SearchArticleListReq) ([]*model.ArticleContentSummary, int64, error) {
-	searchService := cli.Search(constant.EsArticleIndex)
+	searchService := cli.cli.Search(constant.EsArticleIndex)
 	query := elastic.NewBoolQuery()
 	if param.Title != "" {
 		queryTitle := elastic.NewBoolQuery()
@@ -67,7 +67,7 @@ func (cli *ElasticClient) SearchArticleList(ctx context.Context, param *jsonagre
 
 // GetArticleInfo 根据id搜索文章信息
 func (cli *ElasticClient) GetArticleInfo(ctx context.Context, articleID int64) (*model.ArticleContentSummary, error) {
-	resp, err := cli.Get().Index(constant.EsArticleIndex).Id(fmt.Sprintf("%d", articleID)).Do(ctx)
+	resp, err := cli.cli.Get().Index(constant.EsArticleIndex).Id(fmt.Sprintf("%d", articleID)).Do(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func (cli *ElasticClient) GetArticleList(ctx context.Context, ids []int64) ([]*m
 	for _, id := range ids {
 		idStr = append(idStr, fmt.Sprintf("%d", id))
 	}
-	result, err := cli.Search(constant.EsArticleIndex).Query(elastic.NewIdsQuery().Ids(idStr...)).Size(len(ids)).Do(ctx)
+	result, err := cli.cli.Search(constant.EsArticleIndex).Query(elastic.NewIdsQuery().Ids(idStr...)).Size(len(ids)).Do(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func (cli *ElasticClient) GetArticleList(ctx context.Context, ids []int64) ([]*m
 
 // AddArticleToEs 添加文章到es
 func (cli *ElasticClient) AddArticleToEs(ctx context.Context, article *model.ArticleContentSummary) error {
-	exec := cli.Index().Index(constant.EsArticleIndex).Id(fmt.Sprintf("%d", article.ID)).BodyJson(article)
+	exec := cli.cli.Index().Index(constant.EsArticleIndex).Id(fmt.Sprintf("%d", article.ID)).BodyJson(article)
 	resp, err := exec.Do(ctx)
 	if err != nil {
 		return err
@@ -111,7 +111,7 @@ func (cli *ElasticClient) AddArticleToEs(ctx context.Context, article *model.Art
 
 // SearchRandomArticle 随机搜索文章
 func (cli *ElasticClient) SearchRandomArticle(ctx context.Context) ([]*model.ArticleContentSummary, error) {
-	searchResult, err := cli.Search(constant.EsArticleIndex).
+	searchResult, err := cli.cli.Search(constant.EsArticleIndex).
 		SortBy(elastic.NewScriptSort(elastic.NewScript("Math.random()"), "number")).
 		From(0).
 		Size(10).
@@ -124,7 +124,7 @@ func (cli *ElasticClient) SearchRandomArticle(ctx context.Context) ([]*model.Art
 
 // DeleteIndex 删除索引
 func (cli *ElasticClient) DeleteIndex(ctx context.Context) error {
-	_, err := cli.Client.DeleteIndex(constant.EsArticleIndex).Do(ctx)
+	_, err := cli.cli.DeleteIndex(constant.EsArticleIndex).Do(ctx)
 	return err
 }
 
@@ -158,7 +158,7 @@ func (cli *ElasticClient) AggregationsArticleCategory(ctx context.Context) (*Art
 	cidGroup.SubAggregation("bucket_field", bucketSort)
 
 	searchSource.Aggregation("categoryGroup", cidGroup)
-	result, err := cli.Search().Index(constant.EsArticleIndex).SearchSource(searchSource).Do(ctx)
+	result, err := cli.cli.Search().Index(constant.EsArticleIndex).SearchSource(searchSource).Do(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +176,7 @@ func (cli *ElasticClient) AggregationsArticleCategory(ctx context.Context) (*Art
 
 // UpdateArticle 更新文章
 func (cli *ElasticClient) UpdateArticle(ctx context.Context, articleID int64, field map[string]interface{}) error {
-	_, err := cli.Update().Index(constant.EsArticleIndex).
+	_, err := cli.cli.Update().Index(constant.EsArticleIndex).
 		Id(fmt.Sprintf("%d", articleID)).Doc(field).Do(ctx)
 	return err
 }

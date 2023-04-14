@@ -3,6 +3,7 @@ package server
 import (
 	"blog-backend/internal/service"
 	"blog-backend/middleware"
+	"blog-backend/repo/config"
 	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -25,6 +26,9 @@ type Server struct {
 }
 
 func NewServer(opts ...Option) *Server {
+	if err := config.LoadConfig(); err != nil {
+		panic("config load err " + err.Error())
+	}
 	server := defaultServerOption()
 	for _, opt := range opts {
 		opt(server)
@@ -55,9 +59,10 @@ func (s *Server) Run() {
 	}
 	go func() {
 		if err := svr.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Errorf("Server ListenAndServe err:%v", err)
+			log.Fatalf("Server ListenAndServe err:%v", err)
 		}
 	}()
+	log.Infof("server start succ process %d", os.Getpid())
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT)
 	select {

@@ -15,14 +15,22 @@ import (
 	"time"
 )
 
+// Server ...
 type Server struct {
-	router *gin.Engine            // 路由
-	port   uint16                 // 端口
-	proxy  service.ProxyService   // 代理
-	middle *middleware.Middleware // 中间件
+	router             *gin.Engine            // 路由
+	middle             *middleware.Middleware // 中间件
+	MaxShutDownTimeout int                    // Shutdown 的超时时间 ms
 
-	DisableServerRouter bool // 禁用服务路由
-	MaxShutDownTimeout  int  // Shutdown 的超时时间 ms
+	articleService  service.ArticleService
+	bannerService   service.BannerService
+	categoryService service.CategoryService
+	commentService  service.CommentService
+	sharedService   service.SharedService
+	tagService      service.TagService
+	userService     service.UserService
+
+	uploadService   service.UploadService
+	downloadService service.DownloadService
 }
 
 func NewServer(opts ...Option) *Server {
@@ -50,11 +58,9 @@ func NewServer(opts ...Option) *Server {
 // SIGALRM	14	Term	时钟定时信号
 // SIGTERM	15	Term	结束程序(可以被捕获、阻塞或忽略)
 func (s *Server) Run() {
-	if !s.DisableServerRouter {
-		s.initRouter()
-	}
+	s.initRouter()
 	svr := &http.Server{
-		Addr:    fmt.Sprintf(":%d", s.port),
+		Addr:    fmt.Sprintf(":%s", config.GetPort()),
 		Handler: s.router,
 	}
 	go func() {

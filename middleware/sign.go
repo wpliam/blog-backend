@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"blog-backend/repo/config"
 	"blog-backend/util"
 	"blog-backend/util/resp"
 	"crypto/md5"
@@ -9,11 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/wpliap/common-wrap/log"
 	"net/http"
-)
-
-const (
-	Appid = "appid"
-	SKey  = "key"
 )
 
 type SignInfo struct {
@@ -42,11 +38,12 @@ func (middle *Middleware) CheckSign() gin.HandlerFunc {
 }
 
 func checkMd5(sign *SignInfo) error {
-	if sign.Appid != Appid {
+	conf := config.GetSignConf()
+	if sign.Appid != conf.Appid {
 		return fmt.Errorf("appid not exist")
 	}
 	h := md5.New()
-	h.Write([]byte(fmt.Sprintf("%s%d%s", sign.Appid, sign.Timestamp, SKey)))
+	h.Write([]byte(fmt.Sprintf("%s%d%s", sign.Appid, sign.Timestamp, conf.SKey)))
 	str := hex.EncodeToString(h.Sum(nil))
 	if sign.Sign != str {
 		return fmt.Errorf("sign auth faile")

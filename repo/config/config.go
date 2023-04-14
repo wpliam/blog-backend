@@ -13,10 +13,12 @@ func init() {
 }
 
 type AppConf struct {
+	Port    string       `yaml:"port"`
 	Mysql   *MysqlConf   `yaml:"mysql"`
 	Redis   *RedisConf   `yaml:"redis"`
 	Ftp     *FtpConf     `yaml:"ftp"`
 	Elastic *ElasticConf `yaml:"elastic"`
+	Sign    *SignConf    `yaml:"sign"`
 }
 
 type MysqlConf struct {
@@ -40,6 +42,11 @@ type ElasticConf struct {
 	Password string `yaml:"password"`
 }
 
+type SignConf struct {
+	Appid string `yaml:"appid"`
+	SKey  string `yaml:"s_key"`
+}
+
 // LoadConfig 加载配置
 func LoadConfig() error {
 	appConf := &AppConf{}
@@ -58,6 +65,10 @@ func getAppConf() *AppConf {
 	return conf.Load().(*AppConf)
 }
 
+func GetPort() string {
+	return getAppConf().Port
+}
+
 func GetMysqlConf() *MysqlConf {
 	return getAppConf().Mysql
 }
@@ -72,4 +83,8 @@ func GetRedisConf() *RedisConf {
 
 func GetElasticConf() *ElasticConf {
 	return getAppConf().Elastic
+}
+
+func GetSignConf() *SignConf {
+	return getAppConf().Sign
 }

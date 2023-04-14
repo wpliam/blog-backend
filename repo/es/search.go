@@ -65,8 +65,8 @@ func (cli *ElasticClient) SearchArticleList(ctx context.Context, param *jsonagre
 	return convertArticleResult(searchResult), searchResult.TotalHits(), nil
 }
 
-// GetArticleInfo 根据id搜索文章信息
-func (cli *ElasticClient) GetArticleInfo(ctx context.Context, articleID int64) (*model.ArticleContentSummary, error) {
+// QueryArticleInfo 根据id搜索文章信息
+func (cli *ElasticClient) QueryArticleInfo(ctx context.Context, articleID int64) (*model.ArticleContentSummary, error) {
 	resp, err := cli.cli.Get().Index(constant.EsArticleIndex).Id(fmt.Sprintf("%d", articleID)).Do(ctx)
 	if err != nil {
 		return nil, err
@@ -82,8 +82,8 @@ func (cli *ElasticClient) GetArticleInfo(ctx context.Context, articleID int64) (
 	return summary, nil
 }
 
-// GetArticleList 获取文章列表
-func (cli *ElasticClient) GetArticleList(ctx context.Context, ids []int64) ([]*model.ArticleContentSummary, error) {
+// QueryArticleList 获取文章列表
+func (cli *ElasticClient) QueryArticleList(ctx context.Context, ids []int64) ([]*model.ArticleContentSummary, error) {
 	if len(ids) == 0 {
 		return nil, nil
 	}
@@ -101,11 +101,10 @@ func (cli *ElasticClient) GetArticleList(ctx context.Context, ids []int64) ([]*m
 // AddArticleToEs 添加文章到es
 func (cli *ElasticClient) AddArticleToEs(ctx context.Context, article *model.ArticleContentSummary) error {
 	exec := cli.cli.Index().Index(constant.EsArticleIndex).Id(fmt.Sprintf("%d", article.ID)).BodyJson(article)
-	resp, err := exec.Do(ctx)
+	_, err := exec.Do(ctx)
 	if err != nil {
 		return err
 	}
-	log.Infof("InsertArticle resp:%+v", resp)
 	return nil
 }
 

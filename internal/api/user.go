@@ -213,7 +213,7 @@ func (u *userImpl) GetUserCollectList(ctx *gin.Context) (interface{}, error) {
 		ids = append(ids, userID)
 	}
 	esCli := u.GetElasticProxy()
-	articles, err := esCli.GetArticleList(ctx, ids)
+	articles, err := esCli.QueryArticleList(ctx, ids)
 	if err != nil {
 		return nil, err
 	}

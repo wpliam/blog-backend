@@ -128,7 +128,7 @@ func (a *articleImpl) ReadArticle(ctx *gin.Context) (interface{}, error) {
 	dbCli := a.GetGormProxy()
 	esCli := a.GetElasticProxy()
 	redisCli := a.GetRedisProxy()
-	summary, err := esCli.GetArticleInfo(ctx, articleID)
+	summary, err := esCli.QueryArticleInfo(ctx, articleID)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +166,7 @@ func (a *articleImpl) ReadArticle(ctx *gin.Context) (interface{}, error) {
 	if len(summary.RecommendIDs) > 0 {
 		handler = append(handler, func() error {
 			var err error
-			rsp.Recommend, err = esCli.GetArticleList(ctx, summary.RecommendIDs)
+			rsp.Recommend, err = esCli.QueryArticleList(ctx, summary.RecommendIDs)
 			return err
 		})
 	}

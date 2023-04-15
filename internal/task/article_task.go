@@ -13,21 +13,21 @@ import (
 )
 
 // NewArticleCountTask ...
-func NewArticleCountTask(proxyService service.ProxyService) service.TaskService {
-	return &articleTask{
+func NewArticleCountTask(proxyService service.ProxyService) *ArticleCountTask {
+	return &ArticleCountTask{
 		rw:           sync.RWMutex{},
 		article:      make(map[int64]*model.ArticleContentInfo),
 		proxyService: proxyService,
 	}
 }
 
-type articleTask struct {
+type ArticleCountTask struct {
 	rw           sync.RWMutex
 	article      map[int64]*model.ArticleContentInfo
 	proxyService service.ProxyService
 }
 
-func (a *articleTask) AddView(ctx context.Context) {
+func (a *ArticleCountTask) addView(ctx context.Context) {
 	redisCli := a.proxyService.GetRedisProxy()
 	cursor := uint64(0)
 	for {
@@ -48,7 +48,7 @@ func (a *articleTask) AddView(ctx context.Context) {
 	}
 }
 
-func (a *articleTask) AddLike(ctx context.Context) {
+func (a *ArticleCountTask) addLike(ctx context.Context) {
 	redisCli := a.proxyService.GetRedisProxy()
 	cursor := uint64(0)
 	for {
@@ -69,7 +69,7 @@ func (a *articleTask) AddLike(ctx context.Context) {
 	}
 }
 
-func (a *articleTask) AddCollect(ctx context.Context) {
+func (a *ArticleCountTask) addCollect(ctx context.Context) {
 	redisCli := a.proxyService.GetRedisProxy()
 	cursor := uint64(0)
 	for {
@@ -90,7 +90,7 @@ func (a *articleTask) AddCollect(ctx context.Context) {
 	}
 }
 
-func (a *articleTask) add(id int64) *model.ArticleContentInfo {
+func (a *ArticleCountTask) add(id int64) *model.ArticleContentInfo {
 	a.rw.Lock()
 	defer a.rw.Unlock()
 	content, ok := a.article[id]
@@ -101,21 +101,21 @@ func (a *articleTask) add(id int64) *model.ArticleContentInfo {
 	return content
 }
 
-func (a *articleTask) Invoke() {
+func (a *ArticleCountTask) Invoke() {
 	dbCli := a.proxyService.GetGormProxy()
 	redisCli := a.proxyService.GetRedisProxy()
 	ctx := context.Background()
 	_ = thread.GoAndWait(
 		func() error {
-			a.AddView(ctx)
+			a.addView(ctx)
 			return nil
 		},
 		func() error {
-			a.AddLike(ctx)
+			a.addLike(ctx)
 			return nil
 		},
 		func() error {
-			a.AddCollect(ctx)
+			a.addCollect(ctx)
 			return nil
 		},
 	)

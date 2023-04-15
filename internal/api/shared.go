@@ -7,6 +7,7 @@ import (
 	"blog-backend/util"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/wpliap/common-wrap/log"
 	"time"
 )
 
@@ -30,7 +31,17 @@ func (s *sharedImpl) AddViewCount(ctx *gin.Context) error {
 	redisCli := s.GetRedisProxy()
 	success, err := redisCli.SetNX(ctx, util.GetArticleIPKey(ip, articleID), articleID, time.Minute)
 	if err == nil && success {
-		redisCli.ZIncrBy(ctx, constant.ArticleViewCountKey, fmt.Sprintf("%d", articleID), 1)
+		incr := float64(1)
+		if exists := redisCli.ZExists(ctx, constant.ArticleViewCountKey, fmt.Sprintf("%d", articleID)); !exists {
+			articleInfo, err := s.GetGormProxy().GetArticleContentInfo(articleID)
+			if err == nil {
+				incr += float64(articleInfo.ViewCount)
+			}
+		}
+		if _, err = redisCli.ZIncrBy(ctx, constant.ArticleViewCountKey,
+			fmt.Sprintf("%d", articleID), incr); err != nil {
+			log.Errorf("AddViewCount ZIncrBy err:%v articleID:%d", err, articleID)
+		}
 	}
 	return nil
 }
@@ -68,6 +79,21 @@ func (s *sharedImpl) GiveThumb(ctx *gin.Context) (interface{}, error) {
 	if isLike {
 		incr = 1
 	}
+	if exists := redisCli.ZExists(ctx, likeCountKey, idKey); !exists {
+		dbCli := s.GetGormProxy()
+		if req.LikeType == 0 {
+			articleInfo, err := dbCli.GetArticleContentInfo(req.ID)
+			if err == nil {
+				incr += int(articleInfo.LikeCount)
+			}
+		} else if req.LikeType == 1 {
+			commentInfo, err := dbCli.GetCommentByID(req.ID)
+			if err == nil {
+				incr += int(commentInfo.Likes)
+			}
+		}
+	}
+
 	likeCount, err := redisCli.ZIncrBy(ctx, likeCountKey, idKey, float64(incr))
 	if err != nil {
 		return nil, err
@@ -131,8 +157,17 @@ func (s *sharedImpl) GiveCollect(ctx *gin.Context) (interface{}, error) {
 	if isCollect {
 		incr = 1
 	}
-	collectCount, err := redisCli.HIncrBy(ctx, constant.ArticleCollectCountKey,
-		fmt.Sprintf("%d", req.ArticleID), int64(incr))
+	// 如果redis hash中不存在数据,将db数据一并写入redis
+	articleID := fmt.Sprintf("%d", req.ArticleID)
+	if exists := redisCli.HExists(ctx, constant.ArticleCollectCountKey, articleID); !exists {
+		dbCli := s.GetGormProxy()
+		articleInfo, err := dbCli.GetArticleContentInfo(req.ArticleID)
+		if err == nil {
+			incr += int(articleInfo.CollectCount)
+		}
+	}
+
+	collectCount, err := redisCli.HIncrBy(ctx, constant.ArticleCollectCountKey, articleID, int64(incr))
 	if err != nil {
 		return nil, err
 	}

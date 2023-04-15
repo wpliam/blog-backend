@@ -24,3 +24,11 @@ func (cli *RedisClient) HExists(ctx context.Context, key string, field string) b
 	}
 	return result
 }
+
+func (cli *RedisClient) HScan(ctx context.Context, key string, cursor uint64, match string) ([]string, uint64, error) {
+	return cli.cli.HScan(ctx, key, cursor, match, 10000).Result()
+}
+
+func (cli *RedisClient) HDel(ctx context.Context, key string, field string) error {
+	return cli.cli.HDel(ctx, key, field).Err()
+}

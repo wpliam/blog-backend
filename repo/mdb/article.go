@@ -1,9 +1,24 @@
 package mdb
 
 import (
+	"blog-backend/constant"
 	"blog-backend/model"
 	"gorm.io/gorm"
 )
+
+// GetReadyReviewArticle 获取待审核的文章列表
+func (cli *MysqlClient) GetReadyReviewArticle(page *model.Page) ([]*model.Article, error) {
+	var articles []*model.Article
+	if err := cli.cli.
+		Scopes(
+			filterStatus(constant.StateArticlePush),
+			addPage(page),
+		).
+		Find(&articles).Error; err != nil {
+		return nil, err
+	}
+	return articles, nil
+}
 
 // GetArticleInfo 获取文章信息
 func (cli *MysqlClient) GetArticleInfo(articleID int64) (*model.Article, error) {
@@ -48,7 +63,10 @@ func (cli *MysqlClient) GetPrevArticle(articleID int64) (*model.Article, error) 
 // GetArticleContentInfo 获取文章内容信息
 func (cli *MysqlClient) GetArticleContentInfo(articleID int64) (*model.ArticleContentInfo, error) {
 	var content *model.ArticleContentInfo
-	if err := cli.cli.Scopes(filterStatus()).First(&content, "id = ?", articleID).Error; err != nil {
+	if err := cli.cli.
+		Scopes(filterStatus(constant.StateArticlePass)).
+		First(&content, "id = ?", articleID).
+		Error; err != nil {
 		return nil, err
 	}
 	return content, nil
@@ -59,7 +77,7 @@ func (cli *MysqlClient) GetCategoryCard() ([]*model.CategoryCard, error) {
 	var cards []*model.CategoryCard
 	if err := cli.cli.Model(&model.Article{}).
 		Select("category_id", "sum(view_count) as view_count").
-		Scopes(filterStatus()).
+		Scopes(filterStatus(constant.StateArticlePass)).
 		Group("category_id").
 		Order("view_count desc").
 		Limit(2).
@@ -74,7 +92,7 @@ func (cli *MysqlClient) GetCategoryCard() ([]*model.CategoryCard, error) {
 func (cli *MysqlClient) GetHotArticle() ([]*model.Article, error) {
 	var articles []*model.Article
 	if err := cli.cli.Preload("User").
-		Scopes(filterStatus()).
+		Scopes(filterStatus(constant.StateArticlePass)).
 		Order("view_count desc").
 		Limit(5).
 		Find(&articles).
@@ -92,4 +110,8 @@ func (cli *MysqlClient) AddArticle(article *model.Article) error {
 // UpdateArticleStatus 更新文章状态
 func (cli *MysqlClient) UpdateArticleStatus(article *model.Article) error {
 	return cli.cli.Select("status").Updates(&article).Error
+}
+
+func (cli *MysqlClient) UpdateArticleCount(id int64, m map[string]interface{}) error {
+	return cli.cli.Model(&model.Article{}).Where("id = ?", id).Updates(m).Error
 }

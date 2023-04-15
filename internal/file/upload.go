@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/wpliap/common-wrap/log"
 	"path"
 	"strings"
 	"time"
@@ -54,7 +53,6 @@ func (u *uploadImpl) Upload(ctx *gin.Context) (interface{}, error) {
 	result := make(map[string]interface{})
 	result["url"] = downloadUrl + filename
 	result["dir"] = dir
-	log.Infof("upload 图片上传成功 filename:%s", filename)
 	return result, nil
 }
 

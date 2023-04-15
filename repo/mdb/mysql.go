@@ -1,6 +1,7 @@
 package mdb
 
 import (
+	"blog-backend/model"
 	"blog-backend/repo/config"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -22,8 +23,17 @@ func NewMysqlClient() *MysqlClient {
 	}
 }
 
-func filterStatus() func(db *gorm.DB) *gorm.DB {
+func filterStatus(status int) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
-		return db.Where("status = ?", 1)
+		return db.Where("status = ?", status)
+	}
+}
+
+func addPage(page *model.Page) func(db *gorm.DB) *gorm.DB {
+	return func(db *gorm.DB) *gorm.DB {
+		if page == nil || page.Limit == 0 {
+			return db
+		}
+		return db.Offset((page.Offset - 1) * page.Limit).Limit(page.Limit)
 	}
 }

@@ -20,6 +20,10 @@ func (middle *Middleware) parseUid(ctx *gin.Context) int64 {
 	if token == "" {
 		return 0
 	}
+	uid, err := middle.RedisProxy.GetInt64(ctx, token)
+	if err == nil {
+		return uid
+	}
 	claims, err := middle.Jwt.ParseClaims(ctx)
 	if err != nil {
 		return 0
@@ -27,9 +31,5 @@ func (middle *Middleware) parseUid(ctx *gin.Context) int64 {
 	if claims.VerifyExpiresAt(time.Now(), false) {
 		return claims.Uid
 	}
-	uid, err := middle.RedisProxy.GetInt64(ctx, token)
-	if err != nil {
-		return 0
-	}
-	return uid
+	return 0
 }

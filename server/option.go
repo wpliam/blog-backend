@@ -24,6 +24,8 @@ func defaultServerOption() *Server {
 		},
 		MaxShutDownTimeout: 10,
 
+		proxyService: proxyService,
+
 		articleService:  api.NewArticleService(proxyService),
 		bannerService:   api.NewBannerService(proxyService),
 		categoryService: api.NewCategoryService(proxyService),
@@ -31,6 +33,9 @@ func defaultServerOption() *Server {
 		sharedService:   api.NewSharedService(proxyService),
 		tagService:      api.NewTagService(proxyService),
 		userService:     api.NewUserService(proxyService),
+
+		adminService: api.NewAdminService(proxyService),
+
 		uploadService:   file.NewUploadService(),
 		downloadService: file.NewDownloadService(),
 	}

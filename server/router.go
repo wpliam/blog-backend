@@ -58,12 +58,13 @@ func (s *Server) initRouter() {
 		signGroup.GET("get_category_card", s.wrapperHandler(s.categoryService.GetCategoryCard))
 		// 获取分类列表
 		signGroup.GET("get_category_list", s.wrapperHandler(s.categoryService.GetCategoryList))
+
+		// 获取准备审核的文章
+		signGroup.POST("get_ready_review_article", s.wrapperHandler(s.adminService.GetReadyReviewArticle))
 	}
 
 	loginGroup := signGroup.Use(s.middle.LoginAuth())
 	{
-		// 文章审核
-		loginGroup.POST("article_review", s.wrapper(s.articleService.ArticleReview))
 		// 写文章
 		loginGroup.POST("write_article", s.middle.LoginAuth(), s.wrapper(s.articleService.WriteArticle))
 		// 收藏
@@ -78,6 +79,9 @@ func (s *Server) initRouter() {
 		loginGroup.POST("census_clock_info", s.wrapperHandler(s.sharedService.CensusClockInfo))
 		// 添加评论
 		loginGroup.POST("add_comment", s.wrapper(s.commentService.AddComment))
+
+		// 文章审核
+		loginGroup.POST("article_review", s.wrapper(s.adminService.ArticleReview))
 	}
 }
 

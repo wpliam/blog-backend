@@ -2,6 +2,14 @@ package mdb
 
 import "blog-backend/model"
 
+func (cli *MysqlClient) GetCommentByID(commentID int64) (*model.Comment, error) {
+	var comment *model.Comment
+	if err := cli.cli.First(&comment, commentID).Error; err != nil {
+		return nil, err
+	}
+	return comment, nil
+}
+
 func (cli *MysqlClient) GetCommentInfo(articleID int64, parentID int64) ([]*model.Comment, error) {
 	var comments []*model.Comment
 	where := make(map[string]interface{})

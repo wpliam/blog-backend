@@ -21,6 +21,8 @@ type Server struct {
 	middle             *middleware.Middleware // 中间件
 	MaxShutDownTimeout int                    // Shutdown 的超时时间 ms
 
+	proxyService service.ProxyService
+
 	articleService  service.ArticleService
 	bannerService   service.BannerService
 	categoryService service.CategoryService
@@ -31,6 +33,8 @@ type Server struct {
 
 	uploadService   service.UploadService
 	downloadService service.DownloadService
+
+	adminService service.AdminService
 }
 
 func NewServer(opts ...Option) *Server {
@@ -58,6 +62,7 @@ func NewServer(opts ...Option) *Server {
 // SIGALRM	14	Term	时钟定时信号
 // SIGTERM	15	Term	结束程序(可以被捕获、阻塞或忽略)
 func (s *Server) Run() {
+	go s.timerStart()
 	s.initRouter()
 	svr := &http.Server{
 		Addr:    fmt.Sprintf(":%s", config.GetPort()),

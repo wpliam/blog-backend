@@ -19,6 +19,11 @@ func GetUid(ctx *gin.Context) int64 {
 	return ctx.GetInt64("uid")
 }
 
+// GetStaffName 获取登录人
+func GetStaffName(ctx *gin.Context) string {
+	return ctx.GetHeader("staffname")
+}
+
 // GetArticleID 获取文章ID
 func GetArticleID(ctx *gin.Context) int64 {
 	return ParseInt64(ctx.Param("articleID"))

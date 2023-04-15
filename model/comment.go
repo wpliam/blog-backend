@@ -14,7 +14,7 @@ type Comment struct {
 	ArticleID      int64  `json:"articleID"`      // 文章id
 	ReplyCommentID int64  `json:"replyCommentID"` // 回复的评论id
 	ReplyUserID    int64  `json:"replyUserID"`    // 回复的用户ID
-	Likes          int64  `json:"likes"`          // 评论获赞量
+	LikeCount      int64  `json:"likeCount"`      // 评论获赞量
 	Status         int    `json:"status"`         // 评论状态
 }
 
@@ -33,8 +33,8 @@ type CommentContent struct {
 	User       *User     `json:"user"`
 	ReplyUser  *User     `json:"replyUser"`
 
-	IsLike bool  `json:"isLike"`
-	Likes  int64 `json:"likes"`
+	IsLike    bool  `json:"isLike"`
+	LikeCount int64 `json:"likeCount"`
 
 	SubComment []*CommentContent `json:"subComment"`
 }

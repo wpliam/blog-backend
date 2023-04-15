@@ -7,17 +7,20 @@ import (
 )
 
 // GetReadyReviewArticle 获取待审核的文章列表
-func (cli *MysqlClient) GetReadyReviewArticle(page *model.Page) ([]*model.Article, error) {
+func (cli *MysqlClient) GetReadyReviewArticle(page *model.Page) ([]*model.Article, int64, error) {
 	var articles []*model.Article
+	var count int64
 	if err := cli.cli.
+		Model(&model.Article{}).
 		Scopes(
 			filterStatus(constant.StateArticlePush),
 			addPage(page),
 		).
+		Count(&count).
 		Find(&articles).Error; err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return articles, nil
+	return articles, count, nil
 }
 
 // GetArticleInfo 获取文章信息
@@ -89,10 +92,15 @@ func (cli *MysqlClient) GetCategoryCard() ([]*model.CategoryCard, error) {
 }
 
 // GetHotArticle 获取热门文章
-func (cli *MysqlClient) GetHotArticle() ([]*model.Article, error) {
+func (cli *MysqlClient) GetHotArticle(userID int64) ([]*model.Article, error) {
 	var articles []*model.Article
+	where := make(map[string]interface{})
+	where["status"] = constant.StateArticlePass
+	if userID > 0 {
+		where["user_id"] = userID
+	}
 	if err := cli.cli.Preload("User").
-		Scopes(filterStatus(constant.StateArticlePass)).
+		Where(where).
 		Order("view_count desc").
 		Limit(5).
 		Find(&articles).

@@ -21,7 +21,7 @@ func (s *Server) initRouter() {
 		// 搜索文章列表
 		signGroup.POST("search_article_list", s.wrapperHandler(s.articleService.SearchArticleList))
 		// 获取热门文章
-		signGroup.GET("get_hot_article", s.wrapperHandler(s.articleService.GetHotArticle))
+		signGroup.GET("get_hot_article/:uid", s.wrapperHandler(s.articleService.GetHotArticle))
 		// 读取文章
 		signGroup.GET("read_article/:articleID", s.wrapperHandler(s.articleService.ReadArticle))
 		// 获取文章归档

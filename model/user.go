@@ -8,6 +8,7 @@ type User struct {
 	Username string `json:"username"`
 	Nickname string `json:"nickname"`
 	Avatar   string `json:"avatar"`
+	Role     uint32 `yaml:"role"` // 0:普通用户 1:管理员
 	Desc     string `json:"desc"`
 }
 

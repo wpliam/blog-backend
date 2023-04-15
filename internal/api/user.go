@@ -47,7 +47,7 @@ func (u *userImpl) Login(ctx *gin.Context) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err = u.GetRedisProxy().Set(ctx, token, accountInfo.ID, constant.LoginRedisValidTime); err != nil {
+	if err = u.GetRedisProxy().Set(ctx, token, accountInfo.Username, constant.LoginRedisValidTime); err != nil {
 		log.Errorf("Login redis set err:%v", err)
 	}
 	go func() {
@@ -80,20 +80,16 @@ func (u *userImpl) RefreshToken(ctx *gin.Context) (interface{}, error) {
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		return nil, err
 	}
-	id, err := u.GetRedisProxy().Get(ctx, req.Token)
+	id, err := u.GetRedisProxy().GetInt64(ctx, req.Token)
 	if err == redis.Nil {
 		return nil, fmt.Errorf("token not exist")
 	}
-	uid := util.ParseInt64(id)
-	if uid != req.Uid {
-		return nil, fmt.Errorf("id error")
-	}
-	token, err := jwtauth.DefaultJwtAuth.GenToken(ctx, uid)
+	token, err := jwtauth.DefaultJwtAuth.GenToken(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 	// 新token加入redis
-	if err = u.GetRedisProxy().Set(ctx, token, uid, constant.LoginRedisValidTime); err != nil {
+	if err = u.GetRedisProxy().Set(ctx, token, id, constant.LoginRedisValidTime); err != nil {
 		return nil, err
 	}
 	// 将旧token删除
@@ -103,7 +99,7 @@ func (u *userImpl) RefreshToken(ctx *gin.Context) (interface{}, error) {
 	rsp := &jsonagree.RefreshTokenReply{
 		Token: token,
 	}
-	log.Infof("RefreshToken success req.token:%s token:", req.Token, token)
+	log.Infof("RefreshToken success oldToken:%s newtoken:%s", req.Token, token)
 	return rsp, nil
 }
 

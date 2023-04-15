@@ -95,7 +95,11 @@ func (a *ArticleCountTask) add(id int64) *model.ArticleContentInfo {
 	defer a.rw.Unlock()
 	content, ok := a.article[id]
 	if !ok {
-		content = &model.ArticleContentInfo{}
+		content = &model.ArticleContentInfo{
+			LikeCount:    -1,
+			ViewCount:    -1,
+			CollectCount: -1,
+		}
 		a.article[id] = content
 	}
 	return content
@@ -121,13 +125,14 @@ func (a *ArticleCountTask) Invoke() {
 	)
 	for id, article := range a.article {
 		updateMap := make(map[string]interface{})
-		if article.LikeCount > 0 {
+		// -1为初始值，只要大于-1,代表存在redis,需要更新db
+		if article.LikeCount > -1 {
 			updateMap["like_count"] = article.LikeCount
 		}
-		if article.CollectCount > 0 {
+		if article.CollectCount > -1 {
 			updateMap["collect_count"] = article.CollectCount
 		}
-		if article.ViewCount > 0 {
+		if article.ViewCount > -1 {
 			updateMap["view_count"] = article.ViewCount
 		}
 		if err := dbCli.UpdateArticleCount(id, updateMap); err != nil {

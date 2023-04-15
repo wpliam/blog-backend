@@ -61,3 +61,8 @@ func (cli *MysqlClient) GetUserCommentCount(uid int64) (int64, error) {
 func (cli *MysqlClient) SetCommentInfo(comment *model.Comment) error {
 	return cli.cli.Create(&comment).Error
 }
+
+// UpdateCommentInfo 更新评论信息
+func (cli *MysqlClient) UpdateCommentInfo(id int64, m map[string]interface{}) error {
+	return cli.cli.Model(&model.Comment{}).Where("id = ?", id).Updates(m).Error
+}

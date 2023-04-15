@@ -109,7 +109,8 @@ func articleGroupBy(articleList []*model.ArticleContentSummary) map[string][]*mo
 
 // GetHotArticle 获取热门文章
 func (a *articleImpl) GetHotArticle(ctx *gin.Context) (interface{}, error) {
-	articles, err := a.GetGormProxy().GetHotArticle()
+	uid := ctx.Param("uid")
+	articles, err := a.GetGormProxy().GetHotArticle(util.ParseInt64(uid))
 	if err != nil {
 		return nil, err
 	}
@@ -262,35 +263,4 @@ func (a *articleImpl) getRecommends(list []*model.Article) []string {
 		recommends = append(recommends, fmt.Sprintf("%d", item.ID))
 	}
 	return recommends
-}
-
-// ArticleReview 文章审核
-func (a *articleImpl) ArticleReview(ctx *gin.Context) error {
-	// 超级管理员才有权限审核
-	// todo 后面到db拉取权限
-	//uid := util.GetUid(ctx)
-	//if uid != 1 {
-	//	return fmt.Errorf("没有审核权限")
-	//}
-	var req *jsonagree.ArticleReviewReq
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		return err
-	}
-	// 默认通过
-	dbCli := a.GetGormProxy()
-	articleInfo, err := dbCli.GetArticleInfo(req.ArticleID)
-	if err != nil {
-		return err
-	}
-	//if articleInfo.Status == 1 {
-	//	return fmt.Errorf("文章已是审核通过状态")
-	//}
-	articleInfo.Status = 1
-	if err = dbCli.UpdateArticleStatus(articleInfo); err != nil {
-		return err
-	}
-	if err = a.GetElasticProxy().AddArticleToEs(ctx, articleInfo.ArticleContentSummary()); err != nil {
-		return err
-	}
-	return nil
 }

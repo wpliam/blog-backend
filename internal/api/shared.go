@@ -52,49 +52,32 @@ func (s *sharedImpl) GiveThumb(ctx *gin.Context) (interface{}, error) {
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		return nil, err
 	}
-	redisCli := s.GetRedisProxy()
+	if req.LikeType == 0 {
+		return s.articleThumb(ctx, req)
+	}
+	return s.commentThumb(ctx, req)
+}
+
+func (s *sharedImpl) articleThumb(ctx *gin.Context, req *jsonagree.GiveThumbReq) (*jsonagree.GiveThumbReply, error) {
 	userKey := util.GetUserArticleLikeKey(util.GetUid(ctx))
-	likeCountKey := constant.ArticleLikeCountKey
-	// 给评论点赞
-	if req.LikeType == 1 {
-		userKey = util.GetUserCommentLikeKey(util.GetUid(ctx))
-		likeCountKey = constant.CommentLikeCountKey
-	}
-	// 文章是否在用户的点赞列表
-	isMember := redisCli.SIsMember(ctx, userKey, req.ID)
-	var err error
-	var isLike bool
-	if isMember {
-		err = redisCli.SRem(ctx, userKey, req.ID)
-		isLike = false
-	} else {
-		err = redisCli.SAdd(ctx, userKey, req.ID)
-		isLike = true
-	}
+	redisCli := s.GetRedisProxy()
+	dbCli := s.GetGormProxy()
+	isLike, err := s.hasLike(ctx, userKey, req.ID)
 	if err != nil {
 		return nil, err
 	}
-	idKey := fmt.Sprintf("%d", req.ID)
 	incr := -1
 	if isLike {
 		incr = 1
 	}
-	if exists := redisCli.ZExists(ctx, likeCountKey, idKey); !exists {
-		dbCli := s.GetGormProxy()
-		if req.LikeType == 0 {
-			articleInfo, err := dbCli.GetArticleContentInfo(req.ID)
-			if err == nil {
-				incr += int(articleInfo.LikeCount)
-			}
-		} else if req.LikeType == 1 {
-			commentInfo, err := dbCli.GetCommentByID(req.ID)
-			if err == nil {
-				incr += int(commentInfo.Likes)
-			}
+	idKey := fmt.Sprintf("%d", req.ID)
+	if exists := redisCli.ZExists(ctx, constant.ArticleLikeCountKey, idKey); !exists {
+		articleInfo, err := dbCli.GetArticleContentInfo(req.ID)
+		if err == nil {
+			incr += int(articleInfo.LikeCount)
 		}
 	}
-
-	likeCount, err := redisCli.ZIncrBy(ctx, likeCountKey, idKey, float64(incr))
+	likeCount, err := redisCli.ZIncrBy(ctx, constant.ArticleLikeCountKey, idKey, float64(incr))
 	if err != nil {
 		return nil, err
 	}
@@ -103,6 +86,52 @@ func (s *sharedImpl) GiveThumb(ctx *gin.Context) (interface{}, error) {
 		IsLike:    isLike,
 	}
 	return rsp, nil
+}
+
+func (s *sharedImpl) commentThumb(ctx *gin.Context, req *jsonagree.GiveThumbReq) (*jsonagree.GiveThumbReply, error) {
+	userKey := util.GetUserCommentLikeKey(util.GetUid(ctx))
+	redisCli := s.GetRedisProxy()
+	dbCli := s.GetGormProxy()
+	isLike, err := s.hasLike(ctx, userKey, req.ID)
+	if err != nil {
+		return nil, err
+	}
+	incr := -1
+	if isLike {
+		incr = 1
+	}
+	idKey := fmt.Sprintf("%d", req.ID)
+	if exists := redisCli.HExists(ctx, constant.CommentLikeCountKey, idKey); !exists {
+		commentInfo, err := dbCli.GetCommentByID(req.ID)
+		if err == nil {
+			incr += int(commentInfo.LikeCount)
+		}
+	}
+	likeCount, err := redisCli.HIncrBy(ctx, constant.CommentLikeCountKey, idKey, int64(incr))
+	if err != nil {
+		return nil, err
+	}
+	rsp := &jsonagree.GiveThumbReply{
+		LikeCount: likeCount,
+		IsLike:    isLike,
+	}
+	return rsp, nil
+}
+
+func (s *sharedImpl) hasLike(ctx *gin.Context, userKey string, id int64) (bool, error) {
+	redisCli := s.GetRedisProxy()
+	// 文章是否在用户的点赞列表
+	isMember := redisCli.SIsMember(ctx, userKey, id)
+	var err error
+	var isLike bool
+	if isMember {
+		err = redisCli.SRem(ctx, userKey, id)
+		isLike = false
+	} else {
+		err = redisCli.SAdd(ctx, userKey, id)
+		isLike = true
+	}
+	return isLike, err
 }
 
 // GiveFollow 关注

@@ -44,7 +44,6 @@ type CensusUserInfoReply struct {
 }
 
 type RefreshTokenReq struct {
-	Uid   int64  `json:"uid" binding:"min=1"`
 	Token string `json:"token" binding:"required"`
 }
 
